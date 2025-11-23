@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Viewer with Directory Browser</title>
+    <!-- PDF.js library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: "Open Sans", Arial, sans-serif;
+            background: #2c3e50;
+            color: white;
+            overflow: hidden;
+        }
+
+        #app-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        /* Toolbar */
+        .toolbar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(0, 0, 0, 0.9);
+            padding: 12px 20px;
+            border-bottom: 2px solid rgba(255, 165, 0, 0.5);
+            flex-wrap: wrap;
+            z-index: 100;
+        }
+
+        .toolbar-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .toolbar button {
+            background: rgba(52, 152, 219, 0.9);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 10px 16px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .toolbar button:hover:not(:disabled) {
+            background: rgba(41, 128, 185, 1);
+            transform: scale(1.05);
+        }
+
+        .toolbar button:disabled {
+            background: rgba(100, 100, 100, 0.5);
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+
+        .toolbar button.zoom-btn {
+            width: 40px;
+            height: 40px;
+            padding: 8px;
+            font-size: 18px;
+        }
+
+        .toolbar button.nav-btn {
+            background: rgba(46, 204, 113, 0.9);
+        }
+
+        .toolbar button.nav-btn:hover:not(:disabled) {
+            background: rgba(39, 174, 96, 1);
+        }
+
+        .toolbar button.reference-btn {
+            background: rgba(255, 165, 0, 0.9);
+        }
+
+        .toolbar button.reference-btn:hover {
+            background: rgba(255, 140, 0, 1);
+        }
+
+        .folder-path-input {
+            width: 300px;
+            padding: 10px 12px;
+            font-size: 13px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 6px;
+            background: rgba(0, 0, 0, 0.5);
+            color: white;
+            font-family: monospace;
+        }
+
+        .folder-path-input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .folder-path-input:focus {
+            outline: none;
+            border-color: rgba(255, 165, 0, 0.9);
+            background: rgba(0, 0, 0, 0.7);
+        }
+
+        .page-number-input {
+            width: 80px;
+            padding: 10px 12px;
+            font-size: 14px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 6px;
+            background: rgba(0, 0, 0, 0.5);
+            color: white;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .page-number-input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .page-number-input:focus {
+            outline: none;
+            border-color: rgba(52, 152, 219, 0.9);
+            background: rgba(0, 0, 0, 0.7);
+        }
+
+        .go-to-page-btn {
+            width: 40px;
+            height: 40px;
+            padding: 8px;
+            font-size: 16px;
+        }
+
+        .page-info {
+            color: white;
+            font-size: 14px;
+            padding: 8px 16px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 6px;
+        }
+
+        .zoom-info {
+            color: white;
+            font-size: 14px;
+            min-width: 60px;
+            text-align: center;
+        }
+
+        /* PDF Viewer Container */
+        .pdf-container {
+            flex: 1;
+            display: flex;
+            justify-content: flex-start;
+            align-items: flex-start;
+            overflow: auto;
+            background: #34495e;
+            padding: 20px;
+        }
+
+        #pdf-canvas {
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+            border-radius: 4px;
+            background: white;
+            display: block;
+        }
+
+        .no-pdf-message {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 18px;
+        }
+
+        .no-pdf-message h2 {
+            font-size: 32px;
+            margin-bottom: 20px;
+            color: rgba(255, 165, 0, 0.9);
+        }
+
+        .no-pdf-message p {
+            margin: 10px 0;
+        }
+
+        .no-pdf-message code {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-family: monospace;
+            color: #3498db;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal-content {
+            background-color: #ecf0f1;
+            border-radius: 12px;
+            padding: 30px;
+            width: 90%;
+            max-width: 700px;
+            max-height: 80vh;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            position: relative;
+            animation: slideDown 0.3s ease;
+        }
+
+        @keyframes slideDown {
+            from {
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 15px;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            color: #2c3e50;
+            font-size: 24px;
+        }
+
+        .modal-instructions {
+            margin-top: 10px;
+            padding: 10px;
+            background: rgba(52, 152, 219, 0.1);
+            border-radius: 5px;
+            border-left: 4px solid #3498db;
+            font-size: 14px;
+            color: #2c3e50;
+        }
+
+        .close-btn {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 35px;
+            height: 35px;
+            font-size: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .close-btn:hover {
+            background: #c0392b;
+            transform: rotate(90deg);
+        }
+
+        .modal-body {
+            max-height: 60vh;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+
+        .reference-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .reference-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 15px;
+            margin-bottom: 8px;
+            background: white;
+            border-radius: 8px;
+            border-left: 4px solid #3498db;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .reference-item:hover {
+            background: rgba(52, 152, 219, 0.1);
+            transform: translateX(5px);
+        }
+
+        .reference-number {
+            font-size: 18px;
+            font-weight: bold;
+            color: #3498db;
+            min-width: 50px;
+        }
+
+        .reference-key {
+            font-family: monospace;
+            font-size: 14px;
+            color: #2c3e50;
+            flex-grow: 1;
+            margin: 0 15px;
+        }
+
+        .reference-go-btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 6px 12px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: bold;
+        }
+
+        .reference-go-btn:hover {
+            background: #2980b9;
+        }
+
+        .reference-go-btn.clicked {
+            background: #27ae60;
+        }
+
+        /* Loading indicator */
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 20px;
+            text-align: center;
+        }
+
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 4px solid white;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Scrollbar styling */
+        .modal-body::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        .modal-body::-webkit-scrollbar-track {
+            background: #bdc3c7;
+            border-radius: 10px;
+        }
+
+        .modal-body::-webkit-scrollbar-thumb {
+            background: #3498db;
+            border-radius: 10px;
+        }
+
+        .modal-body::-webkit-scrollbar-thumb:hover {
+            background: #2980b9;
+        }
+
+        .error-message {
+            color: #e74c3c;
+            background: rgba(231, 76, 60, 0.1);
+            padding: 15px;
+            border-radius: 6px;
+            border-left: 4px solid #e74c3c;
+            margin: 20px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div id="app-container">
+        <!-- Toolbar -->
+        <div class="toolbar">
+            <!-- Page navigation with jump-to input -->
+            <div class="toolbar-group">
+                <button id="prev-page-btn" title="Previous Page">◀ Prev Page</button>
+                <input
+                    type="number"
+                    id="page-number-input"
+                    class="page-number-input"
+                    placeholder="Page #"
+                    min="1"
+                    title="Enter page number and press Enter or click Go"
+                />
+                <button id="go-to-page-btn" class="go-to-page-btn" title="Go to page">→</button>
+                <span class="page-info" id="page-info">Page - / -</span>
+                <button id="next-page-btn" title="Next Page">Next Page ▶</button>
+            </div>
+
+            <!-- Zoom controls -->
+            <div class="toolbar-group">
+                <button id="zoom-out-btn" class="zoom-btn" title="Zoom Out">-</button>
+                <span class="zoom-info" id="zoom-info">100%</span>
+                <button id="zoom-in-btn" class="zoom-btn" title="Zoom In">+</button>
+            </div>
+
+            <!-- Reference button -->
+            <button id="reference-btn" class="reference-btn" title="View PDF List">📋 View Reference</button>
+
+            <!-- Folder path input -->
+            <div class="toolbar-group">
+                <input
+                    type="text"
+                    id="folder-path-input"
+                    class="folder-path-input"
+                    placeholder="./ or path/to/pdfs"
+                    title="Enter ./ for current directory or a relative path to folder"
+                />
+                <button id="load-folder-btn" title="Load PDFs from folder">📂 Load Folder</button>
+            </div>
+        </div>
+
+        <!-- PDF Viewer -->
+        <div class="pdf-container" id="pdf-container">
+            <div class="no-pdf-message">
+                <h2>📄 PDF Viewer</h2>
+                <p>Enter a folder path and click <strong>"Load Folder"</strong></p>
+                <p>Example: <code>./</code> for current directory</p>
+                <p>Or use URL parameter: <code>?./</code> or <code>?path/to/pdfs</code></p>
+            </div>
+            <canvas id="pdf-canvas" style="display: none;"></canvas>
+        </div>
+    </div>
+
+    <!-- Reference Modal -->
+    <div id="reference-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div>
+                    <h2>PDF Reference Guide</h2>
+                    <div class="modal-instructions">
+                        <strong>💡 Quick Navigation:</strong> Click any PDF to jump to it, or use keyboard arrows to navigate pages
+                    </div>
+                </div>
+                <button class="close-btn" id="close-modal-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <ul class="reference-list" id="reference-list">
+                    <!-- Generated by JavaScript -->
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configure PDF.js worker
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+
+        // State
+        let pdfFiles = [];
+        let currentPdfIndex = 0;
+        let currentPdf = null;
+        let currentPageNum = 1;
+        let totalPages = 0;
+        let scale = 1.0;
+        const SCALE_STEP = 0.2;
+        const MIN_SCALE = 0.5;
+        const MAX_SCALE = 3.0;
+
+        // DOM Elements
+        const canvas = document.getElementById('pdf-canvas');
+        const ctx = canvas.getContext('2d');
+        const pdfContainer = document.getElementById('pdf-container');
+        const noPdfMessage = pdfContainer.querySelector('.no-pdf-message');
+        const prevPageBtn = document.getElementById('prev-page-btn');
+        const nextPageBtn = document.getElementById('next-page-btn');
+        const pageNumberInput = document.getElementById('page-number-input');
+        const goToPageBtn = document.getElementById('go-to-page-btn');
+        const zoomInBtn = document.getElementById('zoom-in-btn');
+        const zoomOutBtn = document.getElementById('zoom-out-btn');
+        const pageInfo = document.getElementById('page-info');
+        const zoomInfo = document.getElementById('zoom-info');
+        const folderPathInput = document.getElementById('folder-path-input');
+        const loadFolderBtn = document.getElementById('load-folder-btn');
+        const referenceBtn = document.getElementById('reference-btn');
+        const referenceModal = document.getElementById('reference-modal');
+        const closeModalBtn = document.getElementById('close-modal-btn');
+        const referenceList = document.getElementById('reference-list');
+
+        // Load PDF file
+        async function loadPdf(url) {
+            try {
+                showLoading(true);
+                const loadingTask = pdfjsLib.getDocument(url);
+                currentPdf = await loadingTask.promise;
+                totalPages = currentPdf.numPages;
+                currentPageNum = 1;
+                await renderPage(currentPageNum);
+                updateUI();
+                showLoading(false);
+                canvas.style.display = 'block';
+                noPdfMessage.style.display = 'none';
+            } catch (error) {
+                console.error('Error loading PDF:', error);
+                showError('Failed to load PDF: ' + error.message);
+                showLoading(false);
+            }
+        }
+
+        // Render specific page
+        async function renderPage(pageNum) {
+            if (!currentPdf) return;
+
+            try {
+                const page = await currentPdf.getPage(pageNum);
+                const viewport = page.getViewport({ scale: scale });
+
+                canvas.width = viewport.width;
+                canvas.height = viewport.height;
+
+                const renderContext = {
+                    canvasContext: ctx,
+                    viewport: viewport
+                };
+
+                await page.render(renderContext).promise;
+                currentPageNum = pageNum;
+                updateUI();
+
+                // Scroll to top of the page
+                pdfContainer.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+            } catch (error) {
+                console.error('Error rendering page:', error);
+                showError('Failed to render page: ' + error.message);
+            }
+        }
+
+        // Navigation functions
+        function goToPreviousPdf() {
+            if (currentPdfIndex > 0) {
+                currentPdfIndex--;
+                loadPdf(pdfFiles[currentPdfIndex].url);
+            }
+        }
+
+        function goToNextPdf() {
+            if (currentPdfIndex < pdfFiles.length - 1) {
+                currentPdfIndex++;
+                loadPdf(pdfFiles[currentPdfIndex].url);
+            }
+        }
+
+        function goToPreviousPage() {
+            if (currentPageNum > 1) {
+                renderPage(currentPageNum - 1);
+            }
+        }
+
+        function goToNextPage() {
+            if (currentPageNum < totalPages) {
+                renderPage(currentPageNum + 1);
+            }
+        }
+
+        function zoomIn() {
+            if (scale < MAX_SCALE) {
+                scale = Math.min(scale + SCALE_STEP, MAX_SCALE);
+                renderPage(currentPageNum);
+            }
+        }
+
+        function zoomOut() {
+            if (scale > MIN_SCALE) {
+                scale = Math.max(scale - SCALE_STEP, MIN_SCALE);
+                renderPage(currentPageNum);
+            }
+        }
+
+        function goToPage() {
+            const pageNum = parseInt(pageNumberInput.value);
+
+            if (isNaN(pageNum) || pageNum < 1) {
+                pageNumberInput.style.borderColor = 'rgba(255, 0, 0, 0.8)';
+                setTimeout(() => {
+                    pageNumberInput.style.borderColor = 'rgba(255, 255, 255, 0.3)';
+                }, 500);
+                return;
+            }
+
+            if (pageNum > totalPages) {
+                pageNumberInput.style.borderColor = 'rgba(255, 165, 0, 0.8)';
+                setTimeout(() => {
+                    pageNumberInput.style.borderColor = 'rgba(255, 255, 255, 0.3)';
+                }, 500);
+                return;
+            }
+
+            renderPage(pageNum);
+            pageNumberInput.value = '';
+            pageNumberInput.style.borderColor = 'rgba(0, 255, 0, 0.7)';
+            setTimeout(() => {
+                pageNumberInput.style.borderColor = 'rgba(255, 255, 255, 0.3)';
+            }, 500);
+        }
+
+        // Update UI state
+        function updateUI() {
+            // Update page info
+            if (currentPdf && pdfFiles.length > 0) {
+                pageInfo.textContent = `Page ${currentPageNum} / ${totalPages} | PDF ${currentPdfIndex + 1} / ${pdfFiles.length}`;
+            } else {
+                pageInfo.textContent = 'Page - / -';
+            }
+
+            // Update zoom info
+            zoomInfo.textContent = Math.round(scale * 100) + '%';
+
+            // Update button states
+            prevPageBtn.disabled = currentPageNum <= 1 || !currentPdf;
+            nextPageBtn.disabled = currentPageNum >= totalPages || !currentPdf;
+            pageNumberInput.disabled = !currentPdf;
+            goToPageBtn.disabled = !currentPdf;
+            zoomOutBtn.disabled = scale <= MIN_SCALE;
+            zoomInBtn.disabled = scale >= MAX_SCALE;
+
+            // Update page number input max attribute
+            if (currentPdf) {
+                pageNumberInput.setAttribute('max', totalPages);
+            }
+        }
+
+        // Load PDFs from folder path
+        async function loadFolderPath() {
+            let folderPath = folderPathInput.value.trim();
+
+            if (!folderPath) {
+                alert('Please enter a folder path');
+                return;
+            }
+
+            // Handle ./ as current directory
+            if (folderPath === './') {
+                folderPath = '.';
+            }
+
+            const pdfExtensions = ['pdf'];
+
+            try {
+                showLoading(true);
+                const response = await fetch(folderPath);
+
+                if (!response.ok) {
+                    throw new Error(`Failed to access folder: ${response.status} ${response.statusText}`);
+                }
+
+                const html = await response.text();
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+
+                let links = Array.from(doc.querySelectorAll('a'));
+
+                // Get all PDF files from current directory
+                const directFiles = links
+                    .map(link => link.getAttribute('href'))
+                    .filter(href => {
+                        if (!href || href === '../' || href.startsWith('?')) return false;
+                        const extension = href.split('.').pop().toLowerCase();
+                        return pdfExtensions.includes(extension);
+                    })
+                    .sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
+
+                console.log('Found PDF files:', directFiles);
+
+                // Clear existing PDFs
+                pdfFiles = [];
+
+                // Add direct files
+                directFiles.forEach((file, index) => {
+                    const decodedFile = decodeURIComponent(file);
+                    const fullPath = `${folderPath}/${file}`;
+                    const fileName = decodedFile.replace(/\.pdf$/i, '');
+
+                    pdfFiles.push({
+                        key: `${index + 1}_${fileName}`,
+                        url: fullPath,
+                        fileName: decodedFile
+                    });
+                });
+
+                if (pdfFiles.length === 0) {
+                    alert(`No PDF files found in folder: ${folderPath}`);
+                    showLoading(false);
+                    return;
+                }
+
+                // Load first PDF
+                currentPdfIndex = 0;
+                await loadPdf(pdfFiles[0].url);
+
+                folderPathInput.style.borderColor = 'rgba(0, 255, 0, 0.7)';
+                setTimeout(() => {
+                    folderPathInput.style.borderColor = 'rgba(255, 255, 255, 0.3)';
+                }, 2000);
+
+                console.log(`✓ Loaded ${pdfFiles.length} PDF files from ${folderPath}`);
+
+            } catch (error) {
+                console.error('Error loading folder:', error);
+                alert(`Failed to load folder: ${error.message}\n\nMake sure you're running a Python server with directory listing enabled.`);
+                showLoading(false);
+            }
+        }
+
+        // Modal functions
+        function openModal() {
+            referenceList.innerHTML = '';
+
+            if (pdfFiles.length === 0) {
+                const emptyMessage = document.createElement('li');
+                emptyMessage.className = 'reference-item';
+                emptyMessage.innerHTML = '<span style="color: #7f8c8d;">No PDFs loaded yet. Load a folder first.</span>';
+                referenceList.appendChild(emptyMessage);
+            } else {
+                pdfFiles.forEach((pdf, index) => {
+                    const listItem = document.createElement('li');
+                    listItem.className = 'reference-item';
+
+                    const number = document.createElement('span');
+                    number.className = 'reference-number';
+                    number.textContent = `${index + 1}`;
+
+                    const key = document.createElement('span');
+                    key.className = 'reference-key';
+                    key.textContent = `${pdf.key}`;
+
+                    const goBtn = document.createElement('button');
+                    goBtn.className = 'reference-go-btn';
+                    goBtn.textContent = 'Go';
+                    goBtn.onclick = function(e) {
+                        e.stopPropagation();
+                        goBtn.textContent = '✓';
+                        goBtn.classList.add('clicked');
+                        currentPdfIndex = index;
+                        loadPdf(pdfFiles[index].url);
+                        setTimeout(() => {
+                            closeModal();
+                        }, 500);
+                    };
+
+                    listItem.onclick = function() {
+                        goBtn.click();
+                    };
+
+                    listItem.appendChild(number);
+                    listItem.appendChild(key);
+                    listItem.appendChild(goBtn);
+                    referenceList.appendChild(listItem);
+                });
+            }
+
+            referenceModal.classList.add('show');
+        }
+
+        function closeModal() {
+            referenceModal.classList.remove('show');
+        }
+
+        // Show loading indicator
+        function showLoading(show) {
+            const existing = document.querySelector('.loading');
+            if (existing) existing.remove();
+
+            if (show) {
+                const loading = document.createElement('div');
+                loading.className = 'loading';
+                loading.innerHTML = '<div class="spinner"></div><div>Loading PDF...</div>';
+                pdfContainer.appendChild(loading);
+            }
+        }
+
+        // Show error message
+        function showError(message) {
+            const existing = document.querySelector('.error-message');
+            if (existing) existing.remove();
+
+            const error = document.createElement('div');
+            error.className = 'error-message';
+            error.textContent = message;
+            pdfContainer.appendChild(error);
+
+            setTimeout(() => {
+                error.remove();
+            }, 5000);
+        }
+
+        // Check URL parameters on page load
+        function checkUrlParameters() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const keys = Array.from(urlParams.keys());
+
+            if (keys.length === 0) return;
+
+            const param = keys[0];
+            folderPathInput.value = param;
+            console.log(`URL parameter "${param}" detected as folder path. Auto-loading...`);
+            setTimeout(() => {
+                loadFolderPath();
+            }, 100);
+        }
+
+        // Event Listeners
+        prevPageBtn.addEventListener('click', goToPreviousPage);
+        nextPageBtn.addEventListener('click', goToNextPage);
+        pageNumberInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                goToPage();
+            }
+        });
+        goToPageBtn.addEventListener('click', goToPage);
+        zoomInBtn.addEventListener('click', zoomIn);
+        zoomOutBtn.addEventListener('click', zoomOut);
+        loadFolderBtn.addEventListener('click', loadFolderPath);
+        referenceBtn.addEventListener('click', openModal);
+        closeModalBtn.addEventListener('click', closeModal);
+
+        // Keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            const isInputFocused = document.activeElement.tagName === 'INPUT';
+            if (isInputFocused) return;
+
+            switch(e.key) {
+                case 'ArrowLeft':
+                    goToPreviousPage();
+                    break;
+                case 'ArrowRight':
+                case ' ':
+                    e.preventDefault();
+                    goToNextPage();
+                    break;
+                case '+':
+                case '=':
+                    zoomIn();
+                    break;
+                case '-':
+                case '_':
+                    zoomOut();
+                    break;
+                case 'Escape':
+                    closeModal();
+                    break;
+            }
+        });
+
+        // Enter key to load folder
+        folderPathInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                loadFolderPath();
+            }
+        });
+
+        // Close modal when clicking outside
+        referenceModal.addEventListener('click', function(e) {
+            if (e.target === referenceModal) {
+                closeModal();
+            }
+        });
+
+        // Initialize
+        updateUI();
+        checkUrlParameters();
+    </script>
+</body>
+</html>
