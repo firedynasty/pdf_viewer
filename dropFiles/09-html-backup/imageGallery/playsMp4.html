@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Slideshow</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body, html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+        }
+
+        .slideshow-container {
+            position: relative;
+            width: 100vw;
+            height: calc(100vh - 60px); /* Subtract audio bar height */
+            background: #000;
+        }
+
+        .slide {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            transition: opacity 1s ease-in-out;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .slide.active {
+            opacity: 1;
+        }
+
+        .slide img, .slide video {
+            max-width: 100%;
+            max-height: 100%;
+            width: auto;
+            height: auto;
+            object-fit: contain;
+        }
+
+        /* Loading indicator */
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 20px;
+            z-index: 10;
+        }
+
+        /* Navigation dots */
+        .dots-container {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+            z-index: 100;
+        }
+
+        /* Bottom audio control bar */
+        .audio-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 60px;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 200;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* Play/Pause button */
+        .audio-toggle {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.15);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            white-space: nowrap;
+        }
+
+        .audio-toggle sub {
+            font-size: 8px;
+            margin-left: 2px;
+        }
+
+        .audio-toggle:hover {
+            background: rgba(255, 255, 255, 0.25);
+            border-color: rgba(255, 255, 255, 0.5);
+            transform: scale(1.05);
+        }
+
+        .audio-toggle:active {
+            transform: scale(0.95);
+        }
+
+        .dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.5);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .dot.active {
+            background: rgba(255, 255, 255, 1);
+            transform: scale(1.3);
+        }
+
+        .dot:hover {
+            background: rgba(255, 255, 255, 0.8);
+        }
+
+        /* Arrow controls */
+        .arrow {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(0, 0, 0, 0.5);
+            color: white;
+            border: none;
+            padding: 20px;
+            font-size: 24px;
+            cursor: pointer;
+            z-index: 100;
+            transition: all 0.3s ease;
+            border-radius: 4px;
+        }
+
+        .arrow:hover {
+            background: rgba(0, 0, 0, 0.8);
+        }
+
+        .arrow.prev {
+            left: 20px;
+        }
+
+        .arrow.next {
+            right: 20px;
+        }
+
+        /* Mobile optimization */
+        @media screen and (max-width: 768px) {
+            .slideshow-container {
+                height: calc(100vh - 55px); /* Adjust for mobile audio bar height */
+            }
+
+            .arrow {
+                padding: 15px;
+                font-size: 20px;
+            }
+
+            .arrow.prev {
+                left: 10px;
+            }
+
+            .arrow.next {
+                right: 10px;
+            }
+
+            .dots-container {
+                top: 15px;
+            }
+
+            .dot {
+                width: 10px;
+                height: 10px;
+            }
+
+            .audio-bar {
+                height: 55px;
+            }
+
+            .audio-toggle {
+                width: 45px;
+                height: 45px;
+                font-size: 18px;
+            }
+        }
+
+        /* Touch friendly for mobile */
+        @media (hover: none) and (pointer: coarse) {
+            .arrow {
+                opacity: 0.7;
+            }
+        }
+
+        /* Landscape mode on mobile - make audio bar more compact */
+        @media screen and (max-height: 500px) and (orientation: landscape) {
+            .audio-bar {
+                height: 40px;
+                padding: 0 10px;
+            }
+
+            .slideshow-container {
+                height: calc(100vh - 40px);
+            }
+
+            .audio-toggle {
+                width: 35px;
+                height: 35px;
+                font-size: 14px;
+                margin: 0 5px;
+            }
+
+            .audio-toggle sub {
+                font-size: 6px;
+            }
+
+            #songName {
+                font-size: 11px !important;
+                margin-right: 10px !important;
+                min-width: 100px !important;
+            }
+
+            .dots-container {
+                top: 10px;
+            }
+
+            .arrow {
+                padding: 10px;
+                font-size: 18px;
+            }
+        }
+
+        /* Password protection overlay */
+        #passwordOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        #passwordOverlay.hidden {
+            display: none;
+        }
+
+        .password-container {
+            background: #1a1a1a;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+            text-align: center;
+        }
+
+        .password-container h2 {
+            color: white;
+            margin-bottom: 20px;
+            font-size: 24px;
+        }
+
+        .password-container input {
+            width: 280px;
+            padding: 12px;
+            font-size: 16px;
+            border: 2px solid #333;
+            border-radius: 5px;
+            background: #2a2a2a;
+            color: white;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        .password-container input:focus {
+            border-color: #4a90e2;
+        }
+
+        .password-container button {
+            margin-top: 15px;
+            padding: 12px 30px;
+            font-size: 16px;
+            background: #4a90e2;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .password-container button:hover {
+            background: #357abd;
+        }
+
+        .password-error {
+            color: #ff4444;
+            margin-top: 10px;
+            font-size: 14px;
+            min-height: 20px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Password protection overlay -->
+    <div id="passwordOverlay">
+        <div class="password-container">
+            <h2>Enter Password</h2>
+            <input type="password" id="passwordInput" placeholder="Password" autocomplete="off">
+            <br>
+            <button onclick="checkPassword()">Submit</button>
+            <div class="password-error" id="errorMessage"></div>
+        </div>
+    </div>
+
+    <div class="slideshow-container">
+        <div class="loading">Loading images...</div>
+
+        <!-- Slides will be generated here by JavaScript -->
+
+        <!-- Navigation arrows -->
+        <button class="arrow prev" onclick="changeSlide(-1)">❮</button>
+        <button class="arrow next" onclick="changeSlide(1)">❯</button>
+
+        <!-- Navigation dots -->
+        <div class="dots-container" id="dotsContainer">
+            <!-- Dots will be generated here by JavaScript -->
+        </div>
+    </div>
+
+    <!-- Audio control bar -->
+    <div class="audio-bar">
+        <span id="songName" style="color: white; margin-right: 20px; font-size: 14px; min-width: 200px;"></span>
+        <button class="audio-toggle" id="btnPrev" onclick="previousSong()">
+            «
+        </button>
+        <button class="audio-toggle" id="audioToggle" onclick="toggleAudio()">
+            ▶<sub>music</sub>
+        </button>
+        <button class="audio-toggle" id="btnNext" onclick="nextSong()">
+            »
+        </button>
+    </div>
+
+    <!-- Hidden audio element -->
+    <audio id="backgroundAudio">
+        <source src="" type="audio/mpeg">
+    </audio>
+
+    <script>
+        // Simple hash function for password obfuscation
+        function simpleHash(str) {
+            let hash = 0;
+            for (let i = 0; i < str.length; i++) {
+                const char = str.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
+                hash = hash & hash; // Convert to 32-bit integer
+            }
+            // Add some extra obfuscation with rotation
+            return ((hash >>> 0) * 31 + 17).toString(36);
+        }
+
+        const validHash = 'ulad1fc';
+        let isAuthenticated = false;
+
+        function checkPassword() {
+            const input = document.getElementById('passwordInput');
+            const errorMsg = document.getElementById('errorMessage');
+            const enteredPassword = input.value;
+
+            const hash = simpleHash(enteredPassword);
+
+            if (hash === validHash) {
+                isAuthenticated = true;
+                document.getElementById('passwordOverlay').classList.add('hidden');
+                errorMsg.textContent = '';
+                // Initialize slideshow only after successful authentication
+                initSlideshow();
+            } else {
+                errorMsg.textContent = 'Incorrect password. Please try again.';
+                input.value = '';
+                input.focus();
+            }
+        }
+
+        // Allow Enter key to submit password
+        document.addEventListener('DOMContentLoaded', () => {
+            const passwordInput = document.getElementById('passwordInput');
+            passwordInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    checkPassword();
+                }
+            });
+            passwordInput.focus();
+        });
+
+        const images = [
+    "https://www.dropbox.com/scl/fi/3t8s1c121cm29sloauwe0/welcome_Lily.png?rlkey=mancgpwj3fol0fdjyj1xsyrvu&st=ugwo1nuw&raw=1",
+    "https://www.dropbox.com/scl/fi/5uc5h4wbfm7ls3to9qdbk/20251109_131806o.jpg?rlkey=zkwev4vwybhwvonfyc4sa3v8v&raw=1",
+    "https://www.dropbox.com/scl/fi/rnm3w6rmq44z7hbes7do0/20251109_132920o.jpg?rlkey=rd9zsb64a1get362y8awefy2u&raw=1",
+    "https://www.dropbox.com/scl/fi/r24tnmu385xdoo85i2w8m/20251109_132934.mp4?rlkey=6f7ua6cig1mo52tuxnv6cfq40&raw=1",
+    "https://www.dropbox.com/scl/fi/b7uk3dv8rk1bfybsust2s/20251109_133124.jpg?rlkey=ogatilkgy9ok01pb42kmuvdi0&raw=1",
+    "https://www.dropbox.com/scl/fi/7yqhlb0s71ghjunrozbb3/20251109_133932o.jpg?rlkey=8mtomojz5vwxlbsgbgh1cua1s&raw=1",
+    "https://www.dropbox.com/scl/fi/cx99a7zop8eyiz278vec5/20251109_134237.jpg?rlkey=zmkgm6t9uwkbu29oo57n0vtaw&raw=1",
+    "https://www.dropbox.com/scl/fi/jy75miolglpe2iuoggfxk/20251109_134327.jpg?rlkey=sfrdzru6ij1t8yazo8st0n9af&raw=1",
+    "https://www.dropbox.com/scl/fi/ovttk1coy6ejjz0s0pc2a/20251109_134327o.jpg?rlkey=gcvi3temxsmt3zaw2j04oubcr&raw=1",
+    "https://www.dropbox.com/scl/fi/gupi5wgrwcr54hgibn4fi/20251109_134329.jpg?rlkey=1dxkual24bnpqki91giup9cjb&raw=1",
+    "https://www.dropbox.com/scl/fi/clsugwbv33m7zzox76kmg/20251109_134405o.jpg?rlkey=1lvg00gsc0o30wn81nv06haff&raw=1",
+    "https://www.dropbox.com/scl/fi/muihgyye8yewoalqo7tsd/20251109_134409.jpg?rlkey=88ydk2js4agt3nasal2s8dvk6&raw=1",
+    "https://www.dropbox.com/scl/fi/0wphhfmqz0eyf5ywbrazj/20251109_134421.jpg?rlkey=inzyw77x2b4wph9b4uzvnqdw4&raw=1",
+    "https://www.dropbox.com/scl/fi/pi9ish3ewphqad8lm7daw/20251109_134513.jpg?rlkey=jdejtvf9q9gsi21wbls3pjlok&raw=1",
+    "https://www.dropbox.com/scl/fi/xmf3aslq42cdsifgvi65w/20251109_134526.mp4?rlkey=6lpm9bpgsdbn4sg8fsmr7qi8n&raw=1",
+    "https://www.dropbox.com/scl/fi/6ka38x391dwa0w8k31506/20251109_134552o.jpg?rlkey=izf6prm9litiu08ufaiunq4fl&raw=1",
+    "https://www.dropbox.com/scl/fi/63b4avs72jzgoyabxzysq/20251109_134650o.jpg?rlkey=dcpewa1a2fcu3mr8mlsda7qks&raw=1",
+    "https://www.dropbox.com/scl/fi/18df89c8q3ssr3yrm4ad7/20251109_134715o.jpg?rlkey=5gf7f3sczwhuqxmgeynje01io&raw=1",
+    "https://www.dropbox.com/scl/fi/bikf59zzxagcyr3iy0yeb/20251109_134721.jpg?rlkey=5n6ck0bjs7zqx8wal7r2sdzo0&raw=1",
+    "https://www.dropbox.com/scl/fi/jy7jxdf2kvra6nngt8lit/20251109_134728.jpg?rlkey=wb1mhpzdl89r9tr5bnpwg0686&raw=1",
+    "https://www.dropbox.com/scl/fi/6gzitjfk0fuzxibvovknm/20251109_134734.jpg?rlkey=hiu1mx1mx5j2vbn6laci4stxj&raw=1",
+    "https://www.dropbox.com/scl/fi/2tb686f1ojmn7reslhkuz/20251109_135004.jpg?rlkey=lbefd1ibnzladcxd1fv5pohrt&raw=1",
+    "https://www.dropbox.com/scl/fi/jlakdykw4u05ifvj5eesu/20251109_135210o.jpg?rlkey=c6dxn680l10af1wvvga8qag8v&raw=1",
+    "https://www.dropbox.com/scl/fi/kd05slsekqriz3fzqj1wl/20251109_135242.jpg?rlkey=8abn7anj08exp8jlygx8faz6q&raw=1",
+    "https://www.dropbox.com/scl/fi/fqng6scocndt1ki9h6866/20251109_135417.jpg?rlkey=kbsvbc0n9n9wr71uh55j4vrfm&raw=1",
+    "https://www.dropbox.com/scl/fi/os9ng4hnx9cwi528qkdmm/20251109_135421.jpg?rlkey=iune430kv9w6is0pgh3qeav56&raw=1",
+    "https://www.dropbox.com/scl/fi/rsiuhjskye4uswc7yh36w/20251109_135456.mp4?rlkey=sqx4r0g6n4i2xki38w54dt30j&raw=1",
+    "https://www.dropbox.com/scl/fi/hqx2q5p9t44mct4o3dvx4/20251109_135532o.jpg?rlkey=juk705f9bd4zwusmq63r537nf&raw=1",
+    "https://www.dropbox.com/scl/fi/8yu0c9xn7xc7v9d3m9g9w/20251109_135742o.jpg?rlkey=qhblxj07klc2qfhr2j5j9xjh8&raw=1",
+    "https://www.dropbox.com/scl/fi/vdqtnmkiohldwd59wpviw/20251109_135826.jpg?rlkey=yhdygjijjw7vdwu6g12ls6hzf&raw=1",
+    "https://www.dropbox.com/scl/fi/fen8s28hbep4alms2xqa0/20251109_140127o.jpg?rlkey=wzjg1s3twosm9qv8n1iy31dwg&raw=1",
+    "https://www.dropbox.com/scl/fi/8gqn0qvonnv55hj1eblbv/20251109_141133.jpg?rlkey=kesvza1n3kg7g9bkyhp3ko47x&raw=1",
+    "https://www.dropbox.com/scl/fi/3n9addm8w7g9mnbzvy174/20251109_141136o.jpg?rlkey=v2d4ifxo8ls6z07x3bkww0tdy&raw=1",
+    "https://www.dropbox.com/scl/fi/iwlnchfk2g8gzxvqcta81/20251109_143258o.jpg?rlkey=bnls9azs95pl4e5277zdlvpla&raw=1"
+];
+
+        let currentSlide = 0;
+        let slideInterval;
+        const slideshowContainer = document.querySelector('.slideshow-container');
+        const dotsContainer = document.getElementById('dotsContainer');
+        const loading = document.querySelector('.loading');
+
+        // Initialize slideshow
+        function initSlideshow() {
+            // Create slides
+            images.forEach((url, index) => {
+                const slide = document.createElement('div');
+                slide.className = 'slide';
+                if (index === 0) slide.classList.add('active');
+
+                // Check if URL is a video file
+                const isVideo = url.toLowerCase().match(/\.(mp4|webm|ogg|mov|avi|mkv|m4v)(\?|$)/);
+
+                if (isVideo) {
+                    // Create video element
+                    const video = document.createElement('video');
+                    video.src = url;
+                    video.controls = true;
+                    video.loop = false; // Don't loop - advance to next slide when done
+                    video.muted = false;
+                    video.preload = 'metadata';
+                    video.dataset.slideIndex = index; // Store index for later reference
+
+                    // Handle video load
+                    video.onloadedmetadata = () => {
+                        if (index === images.length - 1) {
+                            loading.style.display = 'none';
+                        }
+                    };
+
+                    // When video ends, advance to next slide
+                    video.addEventListener('ended', () => {
+                        changeSlide(1);
+                    });
+
+                    slide.appendChild(video);
+                } else {
+                    // Create image element
+                    const img = document.createElement('img');
+                    img.src = url;
+                    img.alt = `Slide ${index + 1}`;
+
+                    // Handle image load
+                    img.onload = () => {
+                        if (index === images.length - 1) {
+                            // All images loaded
+                            loading.style.display = 'none';
+                        }
+                    };
+
+                    slide.appendChild(img);
+                }
+
+                slideshowContainer.appendChild(slide);
+
+                // Create dots
+                const dot = document.createElement('span');
+                dot.className = 'dot';
+                if (index === 0) dot.classList.add('active');
+                dot.onclick = () => goToSlide(index);
+                dotsContainer.appendChild(dot);
+            });
+
+            // Start automatic slideshow after a delay
+            setTimeout(() => {
+                startSlideshow();
+            }, 10000); // Wait 10 seconds before starting slideshow
+        }
+
+        // Change slide
+        function changeSlide(direction) {
+            const slides = document.querySelectorAll('.slide');
+            const dots = document.querySelectorAll('.dot');
+
+            // Pause video on current slide if it exists
+            const currentVideo = slides[currentSlide].querySelector('video');
+            if (currentVideo) {
+                currentVideo.pause();
+                currentVideo.currentTime = 0; // Reset video to beginning
+            }
+
+            // Remove active class from current slide
+            slides[currentSlide].classList.remove('active');
+            dots[currentSlide].classList.remove('active');
+
+            // Calculate new slide index
+            currentSlide = (currentSlide + direction + images.length) % images.length;
+
+            // Add active class to new slide
+            slides[currentSlide].classList.add('active');
+            dots[currentSlide].classList.add('active');
+
+            // Check if new slide has a video
+            const newVideo = slides[currentSlide].querySelector('video');
+            if (newVideo) {
+                // Stop timer for videos - they'll advance when done
+                clearInterval(slideInterval);
+                newVideo.currentTime = 0; // Start from beginning
+                newVideo.play().catch(err => console.log('Video autoplay prevented:', err));
+            } else {
+                // Start/reset timer for images
+                resetSlideshow();
+            }
+        }
+
+        // Go to specific slide
+        function goToSlide(index) {
+            const slides = document.querySelectorAll('.slide');
+            const dots = document.querySelectorAll('.dot');
+
+            // Pause video on current slide if it exists
+            const currentVideo = slides[currentSlide].querySelector('video');
+            if (currentVideo) {
+                currentVideo.pause();
+                currentVideo.currentTime = 0; // Reset video to beginning
+            }
+
+            slides[currentSlide].classList.remove('active');
+            dots[currentSlide].classList.remove('active');
+
+            currentSlide = index;
+
+            slides[currentSlide].classList.add('active');
+            dots[currentSlide].classList.add('active');
+
+            // Check if new slide has a video
+            const newVideo = slides[currentSlide].querySelector('video');
+            if (newVideo) {
+                // Stop timer for videos - they'll advance when done
+                clearInterval(slideInterval);
+                newVideo.currentTime = 0; // Start from beginning
+                newVideo.play().catch(err => console.log('Video autoplay prevented:', err));
+            } else {
+                // Start/reset timer for images
+                resetSlideshow();
+            }
+        }
+
+        // Start automatic slideshow
+        function startSlideshow() {
+            slideInterval = setInterval(() => {
+                changeSlide(1);
+            }, 7000); // Change slide every 7 seconds
+        }
+
+        // Reset slideshow timer
+        function resetSlideshow() {
+            clearInterval(slideInterval);
+            startSlideshow();
+        }
+
+        // Keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft') {
+                changeSlide(-1);
+            } else if (e.key === 'ArrowRight') {
+                changeSlide(1);
+            }
+        });
+
+        // Touch swipe support for mobile
+        let touchStartX = 0;
+        let touchEndX = 0;
+
+        slideshowContainer.addEventListener('touchstart', (e) => {
+            touchStartX = e.changedTouches[0].screenX;
+        });
+
+        slideshowContainer.addEventListener('touchend', (e) => {
+            touchEndX = e.changedTouches[0].screenX;
+            handleSwipe();
+        });
+
+        function handleSwipe() {
+            const swipeThreshold = 50;
+            const diff = touchStartX - touchEndX;
+
+            if (Math.abs(diff) > swipeThreshold) {
+                if (diff > 0) {
+                    // Swipe left - next slide
+                    changeSlide(1);
+                } else {
+                    // Swipe right - previous slide
+                    changeSlide(-1);
+                }
+            }
+        }
+
+        // Pause slideshow when user hovers over controls
+        document.querySelectorAll('.arrow, .dot').forEach(element => {
+            element.addEventListener('mouseenter', () => {
+                clearInterval(slideInterval);
+            });
+            element.addEventListener('mouseleave', () => {
+                startSlideshow();
+            });
+        });
+
+        // Don't auto-initialize - wait for password authentication
+        // Slideshow will be initialized in checkPassword() function
+
+        // Playlist data
+        const playlist = [
+    ["Won't Start Now", "https://www.dropbox.com/scl/fi/4inj44tlvu19bkoo0yrwc/03-Won-t-Start-Now.mp3?rlkey=8e8jgxrynyohs9j2ffx8fe3zk&st=pp9nbbt1&raw=1"],
+    ["Ophelia", "https://www.dropbox.com/scl/fi/wb0timw2a7ovoznppg6sb/ophelia.mp3?rlkey=shqaowbye7skftsrybioasrj4&raw=1"],
+    ["Love Story", "https://www.dropbox.com/scl/fi/yq82zxde4v54fy3h1298g/03-Love-Story.mp3?rlkey=24z93w564l23xasz2z9ni0lkv&raw=1"],
+    ["You Belong to Me", "https://www.dropbox.com/scl/fi/xa8idpt65wuyydzdqqnmr/06-You-Belong-With-Me.mp3?rlkey=acfup0guspqmr12zp46s9e7cc&raw=1"],
+    ["All Too Well(10)", "https://www.dropbox.com/scl/fi/m5kmawjlfxwbwwau6z9x7/01-All-Too-Well.mp3?rlkey=t205044ajuw6xvguaftd4rv62&st=66abdrjr&raw=1"],
+    ["Shake it Off", "https://www.dropbox.com/scl/fi/5ge7ebjw7rjdftqfrdoal/06-Shake-It-Off.mp3?rlkey=6ep04p8amipf19rrq8dp94299&raw=1"],
+    ["Blank Space", "https://www.dropbox.com/scl/fi/lsi0s8gb5g7p5gk0f6eb1/02-Blank-Space.mp3?rlkey=srkizao9ozc8248qbjqk8wa1n&raw=1"],
+    ["Anti-Hero", "https://www.dropbox.com/scl/fi/nkz7jy8zvt6vug86qlxeb/03-Anti-Hero.mp3?rlkey=5aqtbur53xaif927ai6fopi5j&raw=1"],
+    ["Cruel Summer", "https://www.dropbox.com/scl/fi/t61p8z85mtmhaoelocuoc/02-Cruel-Summer.mp3?rlkey=g9oa7yf6vdhmyovqancmi6cjo&raw=1"],
+    ["Queen Of Tears", "https://www.dropbox.com/scl/fi/stuo7jx0c7vzl6ex2hkvt/queen_of_tears_clip.mp3?rlkey=60pi97ufym3yybd70vcwqnrch&st=lvqzhxqm&raw=1"],
+    ["Erik_Satie_Gymnopedie", "https://www.dropbox.com/scl/fi/shoujt1vd07snpti2t3lb/erik_satie_gymnopedie.mp3?rlkey=s7yn7rwjw7aw7za4osubvmrrj&st=4z3ewdnp&raw=1"],
+    ["Schubert-Serenade", "https://www.dropbox.com/scl/fi/j9r3smdjuv050r89fluhm/schubert-serenade.mp3?rlkey=vdqxh54ysllarx7e39x4lzduh&st=840f3pwj&raw=1"],
+    ["Shostakovich-Waltz", "https://www.dropbox.com/scl/fi/a4j63cnj0g5kt08lrmca5/shostakovich-waltz.mp3?rlkey=sf8afk4z1t4cjh98696qxh0ub&st=xutpe8y0&raw=1"],
+    ["Rumenapp-Touching", "https://www.dropbox.com/scl/fi/s218uzh1tmcx4pswvlxxh/rumenapp-touching.mp3?rlkey=7v39s55xrdv7kp01rk6nydlcb&st=rxewmt5g&raw=1"]
+];
+
+        // Audio control functionality
+        const audio = document.getElementById('backgroundAudio');
+        const audioToggle = document.getElementById('audioToggle');
+        const songNameDisplay = document.getElementById('songName');
+        let isPlaying = false;
+        let currentSongIndex = 0;
+
+        // Load initial song
+        function loadSong(index) {
+            currentSongIndex = index;
+            const song = playlist[index];
+
+            // Format: ["Song Name", "URL"]
+            audio.src = song[1];
+            songNameDisplay.textContent = song[0];
+        }
+
+        // Initialize first song
+        loadSong(0);
+
+        function toggleAudio() {
+            if (isPlaying) {
+                audio.pause();
+                audioToggle.innerHTML = '▶<sub>music</sub>';
+                isPlaying = false;
+            } else {
+                audio.play().catch(err => {
+                    console.log('Audio playback failed:', err);
+                });
+                audioToggle.innerHTML = '❚❚<sub>music</sub>';
+                isPlaying = true;
+            }
+        }
+
+        function previousSong() {
+            currentSongIndex = (currentSongIndex - 1 + playlist.length) % playlist.length;
+            loadSong(currentSongIndex);
+            if (isPlaying) {
+                audio.play();
+            }
+        }
+
+        function nextSong() {
+            currentSongIndex = (currentSongIndex + 1) % playlist.length;
+            loadSong(currentSongIndex);
+            if (isPlaying) {
+                audio.play();
+            }
+        }
+
+        // Auto-play next song when current song ends
+        audio.addEventListener('ended', () => {
+            nextSong();
+            if (isPlaying) {
+                audio.play();
+            }
+        });
+
+        // Handle spacebar for audio control
+        document.addEventListener('keydown', (e) => {
+            if (e.key === ' ' && e.target.tagName !== 'INPUT') {
+                e.preventDefault();
+                toggleAudio();
+            }
+        });
+    </script>
+</body>
+</html>

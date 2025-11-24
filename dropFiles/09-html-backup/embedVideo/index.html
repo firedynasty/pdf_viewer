@@ -1,0 +1,1323 @@
+<!DOCTYPE html>
+<html lang="en" >
+<head>
+  <meta charset="UTF-8">
+  <title>Main Links</title>
+  <link rel='stylesheet' href='https://netdna.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css'><style>* {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        body {
+            display: flex;
+            height: 100vh;
+        }
+        
+        .main-container {
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+        }
+
+        .sidebar {
+            width: 200px;
+            background-color: #f5f5f5;
+            padding: 20px;
+            border-right: 1px solid #ddd;
+            height: 100vh;
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+
+        .sidebar-item {
+            padding: 10px;
+            margin-bottom: 5px;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: background-color 0.2s;
+        }
+
+        .sidebar-item:hover {
+            background-color: #e0e0e0;
+        }
+
+        .sidebar-item.active {
+            background-color: #d0d0d0;
+        }
+
+        .main-content {
+            flex-grow: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .content-section {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .link-list {
+            margin-top: 20px;
+        }
+
+        .link-item {
+            display: block;
+            padding: 10px;
+            margin-bottom: 8px;
+            background-color: #f8f8f8;
+            border-radius: 4px;
+            text-decoration: none;
+            color: #333;
+            transition: background-color 0.2s;
+        }
+
+        .link-item:hover {
+            background-color: #eee;
+        }
+
+        .text-content {
+            margin-top: 20px;
+            line-height: 1.6;
+            font-family: 'Monaco', 'Consolas', monospace;
+            background-color: #f9f9f9;
+            padding: 20px;
+            border-radius: 4px;
+            white-space: pre-wrap;
+        }
+
+        .text-content p {
+            margin-bottom: 10px;
+        }
+
+.editable-section {
+    margin-top: 20px;
+}
+
+.content-notes {
+    width: 100%;
+    min-height: 100px;
+    padding: 20px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background-color: #f9f9f9;
+    font-family: 'Monaco', 'Consolas', monospace;
+    line-height: 1.6;
+    resize: vertical;
+    color: #333;
+    transition: border-color 0.2s, background-color 0.2s;
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+}
+
+.content-notes:hover {
+    background-color: #f8f8f8;
+}
+
+.content-notes:focus {
+    outline: none;
+    border-color: #d0d0d0;
+    background-color: #fff;
+}
+
+
+/* Add these new styles for the copy button */
+.copy-button {
+    margin-top: 10px;
+    padding: 8px 16px;
+    background-color: #f0f0f0;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.2s;
+}
+
+.copy-button:hover {
+    background-color: #e0e0e0;
+}
+
+.copy-button.copied {
+    background-color: #4CAF50;
+    color: white;
+}
+
+/* Link navigation styles */
+.link-navigation {
+    background-color: #f0f0f0;
+    padding: 10px 20px;
+    border-bottom: 1px solid #ddd;
+    display: flex;
+    justify-content: center;
+}
+
+.link-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.nav-button {
+    padding: 8px 12px;
+    min-width: 60px;
+    background-color: #e0e0e0;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    font-weight: bold;
+}
+
+.nav-button:hover {
+    background-color: #d0d0d0;
+}
+
+.nav-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.link-counter {
+    font-size: 16px;
+    font-weight: bold;
+    min-width: 30px;
+    text-align: center;
+}
+
+.goto-link {
+    margin-left: 15px;
+    padding: 8px 16px;
+    background-color: #4a90e2;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    font-weight: bold;
+}
+
+.goto-link:hover {
+    background-color: #3a80d2;
+}
+
+.link-input {
+    width: 60px;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    text-align: center;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.goto-number-link {
+    padding: 8px 12px;
+    background-color: #4a90e2;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    font-weight: bold;
+    font-size: 14px;
+}
+
+.goto-number-link:hover {
+    background-color: #3a80d2;
+}
+
+.key-hint {
+    font-size: 12px;
+    color: #666;
+    margin: 0 5px;
+    font-weight: normal;
+}
+
+.link-item-container {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.link-number {
+    display: inline-block;
+    width: 30px;
+    height: 30px;
+    line-height: 30px;
+    text-align: center;
+    background-color: #e0e0e0;
+    border-radius: 50%;
+    margin-right: 10px;
+    font-weight: bold;
+}
+
+.active-link {
+    border-left: 3px solid #4a90e2;
+    background-color: #f0f8ff;
+}
+
+/* Prism.js syntax highlighting styles */
+pre[class*="language-"] {
+    background: #f5f5f5;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 1em;
+    margin: 1em 0;
+    overflow: auto;
+    font-family: 'Monaco', 'Consolas', monospace;
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+code[class*="language-"] {
+    font-family: 'Monaco', 'Consolas', monospace;
+    font-size: 14px;
+}
+
+pre code {
+    background: none;
+    border: none;
+    padding: 0;
+    margin: 0;
+}
+
+/* Hide specific navigation buttons */
+#gotoLink,
+#linkInput,
+#gotoNumberLink {
+    display: none;
+}
+
+/* Show prev/next buttons for segment navigation */
+#prevLink,
+#nextLink {
+    display: inline-block;
+}
+
+/* Continuous reading toggle styles */
+.reading-toggle-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: 15px;
+}
+
+.toggle-label {
+    font-size: 14px;
+    color: #666;
+}
+
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 50px;
+    height: 24px;
+}
+
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: .3s;
+    border-radius: 24px;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: .3s;
+    border-radius: 50%;
+}
+
+input:checked + .slider {
+    background-color: #4a90e2;
+}
+
+input:checked + .slider:before {
+    transform: translateX(26px);
+}
+
+/* Video Popup Modal Styles */
+.video-modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+}
+
+.video-modal-content {
+    position: relative;
+    margin: 5% auto;
+    max-width: 80%;
+    max-height: 80%;
+    background-color: #fefefe;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.video-close {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    color: #aaa;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    z-index: 1001;
+}
+
+.video-close:hover,
+.video-close:focus {
+    color: #000;
+}
+
+.video-modal video {
+    width: 100%;
+    height: auto;
+    max-height: 70vh;
+    border-radius: 8px;
+}
+
+.video-modal-title {
+    margin-bottom: 15px;
+    font-size: 18px;
+    font-weight: bold;
+    color: #333;
+}
+
+.video-modal-actions {
+    margin-top: 15px;
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+}
+
+.video-action-btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.insert-markdown-btn {
+    background-color: #4CAF50;
+    color: white;
+}
+
+.insert-markdown-btn:hover {
+    background-color: #45a049;
+}
+
+.cancel-btn {
+    background-color: #f44336;
+    color: white;
+}
+
+.cancel-btn:hover {
+    background-color: #da190b;
+}
+
+/* Read Selected Popup Styles */
+.popup-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: none;
+    z-index: 1000;
+}
+
+.popup-content {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 90%;
+    max-width: 800px;
+    height: 80%;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    display: flex;
+    flex-direction: column;
+}
+
+.popup-header {
+    padding: 1rem;
+    border-bottom: 1px solid #dee2e6;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #f8f9fa;
+    border-radius: 8px 8px 0 0;
+}
+
+.popup-controls {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.popup-control-btn {
+    padding: 0.5rem 1rem;
+    background-color: #3B82F6;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: background-color 0.2s;
+}
+
+.popup-control-btn:hover:not(:disabled) {
+    background-color: #2563EB;
+}
+
+.popup-control-btn:disabled {
+    background-color: #6B7280;
+    cursor: not-allowed;
+}
+
+.popup-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: #6B7280;
+    padding: 0.5rem;
+    line-height: 1;
+    margin-left: 1rem;
+}
+
+.popup-close:hover {
+    color: #DC2626;
+}
+
+.popup-reading-area {
+    flex: 1;
+    overflow-y: auto;
+    padding: 2rem;
+    font-size: 1.2rem;
+    line-height: 1.6;
+    background-color: #f8f9fa;
+}
+
+.popup-reading-area .word {
+    cursor: pointer;
+    transition: background-color 0.2s;
+    padding: 2px;
+    border-radius: 3px;
+}
+
+.popup-reading-area .word:hover {
+    background-color: #e9ecef;
+}
+
+.popup-reading-area .word.current {
+    background-color: #ffd43b;
+    font-weight: bold;
+    box-shadow: 0 0 5px rgba(255, 212, 59, 0.5);
+}
+
+#speedSelect {
+    padding: 0.4rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    margin-left: 0.5rem;
+}
+</style>
+
+<!-- Prism.js CSS for syntax highlighting -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css" rel="stylesheet" />
+
+</head>
+<body>
+<!-- partial:index.partial.html -->
+<!-- partial:index.partial.html -->
+<div class="sidebar" id="sidebar"></div>
+<div class="main-container">
+    <div class="link-navigation">
+        <div class="link-controls">
+            <button class="nav-button" id="prevSidebar">◀ ([)</button>
+            <button class="nav-button" id="prevLink">◀ Prev</button>
+            <span class="link-counter" id="linkCounter">1</span>
+            <button class="nav-button" id="nextLink">Next ▶</button>
+            <button class="goto-link" id="gotoLink">Go to Link</button>
+            <input type="number" class="link-input" id="linkInput" placeholder="#" min="1">
+            <span class="key-hint">(ESC)</span>
+            <button class="goto-number-link" id="gotoNumberLink">Go</button>
+            <button class="nav-button" id="nextSidebar">▶ (])</button>
+            
+            <!-- Copy Pane button -->
+            <button class="nav-button" id="copyPaneButton" title="Copy textarea and text content">📋 Copy Pane</button>
+            
+            <!-- Read Selected button with speed control -->
+            <button class="nav-button" id="readSelectedButton" title="Read highlighted text in popup">🔊 Read Selected</button>
+            <select id="speedSelect" title="Reading speed">
+                <option value="0.5">0.5x</option>
+                <option value="0.7">0.7x</option>
+                <option value="1">1x</option>
+                <option value="1.25" selected>1.25x</option>
+                <option value="1.5">1.5x</option>
+                <option value="2">2x</option>
+            </select>
+            
+            <!-- Continuous reading toggle (hidden) -->
+            <div class="reading-toggle-container" style="display: none;">
+                <span class="toggle-label">🔊 Auto Read</span>
+                <label class="switch">
+                    <input type="checkbox" id="continuousReadingToggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            
+            <!-- View Database button -->
+            <button class="nav-button" id="viewDbButton" title="View all IndexedDB data">🗂️ View DB</button>
+            
+            <!-- Clear Database button -->
+            <button class="nav-button" id="clearDbButton" title="Clear all IndexedDB data" style="background-color: #e74c3c; color: white;">🗑️ Clear DB</button>
+        </div>
+    </div>
+    <div class="main-content" id="mainContent"></div>
+</div>
+
+<!-- Video Modal -->
+<div id="videoModal" class="video-modal">
+    <div class="video-modal-content">
+        <span class="video-close">&times;</span>
+        <div class="video-modal-title" id="videoModalTitle">Video Preview</div>
+        <video id="videoModalPlayer" controls>
+            <source id="videoModalSource" src="" type="video/mp4">
+            Your browser does not support the video tag.
+        </video>
+        <div class="video-modal-actions">
+            <button class="video-action-btn cancel-btn" id="cancelVideoBtn">Cancel</button>
+            <button class="video-action-btn insert-markdown-btn" id="insertMarkdownBtn">📝 Insert to Text</button>
+        </div>
+    </div>
+</div>
+
+<!-- partial -->
+  <script src='//cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js'></script>
+    <!-- IndexedDB Wrapper for local storage functionality -->
+    <script src="indexeddb-wrapper.js?v=1757397516"></script>
+    <script src="script.js?v=1757397516"></script>
+    
+    <script>
+        // IndexedDB initialization and compatibility setup
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('🏀 Basketball Hub loaded with IndexedDB storage');
+            
+            // Set default database name if not present
+            const databaseInput = document.getElementById('databaseInput');
+            if (databaseInput && !databaseInput.value) {
+                databaseInput.value = 'vocabChinese';
+            }
+            
+            // Initialize IndexedDB after a brief delay to ensure all elements are loaded
+            setTimeout(() => {
+                if (window.fetchAvailableKeys) {
+                    window.fetchAvailableKeys();
+                }
+            }, 1000);
+            
+            // View Database button functionality
+            const viewDbButton = document.getElementById('viewDbButton');
+            if (viewDbButton) {
+                viewDbButton.addEventListener('click', async () => {
+                    console.log('🗂️ Viewing all IndexedDB data...');
+                    
+                    try {
+                        // Get all keys using the default database name
+                        const databaseName = window.DEFAULT_DATABASE_NAME || 'basketballStorage';
+                        const keys = await new Promise((resolve, reject) => {
+                            const request = indexedDB.open(databaseName);
+                            request.onsuccess = function(event) {
+                                const db = event.target.result;
+                                const storeName = db.objectStoreNames[0];
+                                if (storeName) {
+                                    const transaction = db.transaction([storeName], 'readonly');
+                                    const store = transaction.objectStore(storeName);
+                                    store.getAllKeys().onsuccess = function(e) {
+                                        resolve(e.target.result);
+                                    };
+                                } else {
+                                    resolve([]);
+                                }
+                            };
+                            request.onerror = () => reject(request.error);
+                        });
+                        
+                        console.log(`Found ${keys.length} keys:`, keys);
+                        
+                        // Get values for each key using the existing wrapper
+                        const data = {};
+                        for (const key of keys) {
+                            try {
+                                // Try the wrapper function first
+                                let value = await loadFromIndexedDB(key);
+                                
+                                // If undefined, try direct IndexedDB access
+                                if (value === undefined) {
+                                    value = await new Promise((resolve, reject) => {
+                                        const request = indexedDB.open(databaseName);
+                                        request.onsuccess = function(event) {
+                                            const db = event.target.result;
+                                            const storeName = db.objectStoreNames[0];
+                                            if (storeName) {
+                                                const transaction = db.transaction([storeName], 'readonly');
+                                                const store = transaction.objectStore(storeName);
+                                                const getRequest = store.get(key);
+                                                getRequest.onsuccess = function() {
+                                                    resolve(getRequest.result);
+                                                };
+                                                getRequest.onerror = () => reject(getRequest.error);
+                                            } else {
+                                                resolve(null);
+                                            }
+                                        };
+                                        request.onerror = () => reject(request.error);
+                                    });
+                                }
+                                
+                                data[key] = value;
+                            } catch (error) {
+                                console.error(`Failed to load key "${key}":`, error);
+                                data[key] = `Error loading: ${error.message}`;
+                            }
+                        }
+                        
+                        // Display in console
+                        console.log('📊 All IndexedDB Data:');
+                        console.table(data);
+                        
+                        // Also alert the user
+                        if (keys.length === 0) {
+                            alert('📁 Database is empty - no data found');
+                        } else {
+                            alert(`🗂️ Found ${keys.length} keys in database:\n${keys.join(', ')}\n\nCheck console for full data display`);
+                        }
+                        
+                    } catch (error) {
+                        console.error('❌ Error accessing IndexedDB:', error);
+                        alert('❌ Error accessing database: ' + error.message);
+                    }
+                });
+            }
+            
+            // Clear Database button functionality
+            const clearDbButton = document.getElementById('clearDbButton');
+            if (clearDbButton) {
+                clearDbButton.addEventListener('click', async () => {
+                    const databaseName = window.DEFAULT_DATABASE_NAME || 'basketballStorage';
+                    
+                    // First confirmation
+                    const firstConfirm = confirm(`⚠️ WARNING: This will delete ALL data in "${databaseName}" database.\n\nAre you sure you want to continue?`);
+                    if (!firstConfirm) {
+                        console.log('❌ Database clear cancelled by user');
+                        return;
+                    }
+                    
+                    // Second confirmation - more specific
+                    const secondConfirm = confirm(`🚨 FINAL CONFIRMATION:\n\nThis action cannot be undone!\n\nType "DELETE" in the next prompt to proceed, or click Cancel to abort.`);
+                    if (!secondConfirm) {
+                        console.log('❌ Database clear cancelled at second confirmation');
+                        return;
+                    }
+                    
+                    // Third step - require typing "DELETE"
+                    const typeConfirm = prompt('Type "DELETE" (all caps) to confirm database deletion:');
+                    if (typeConfirm !== 'DELETE') {
+                        alert('❌ Database clear cancelled - confirmation text did not match');
+                        console.log('❌ Database clear cancelled - user did not type DELETE');
+                        return;
+                    }
+                    
+                    try {
+                        console.log(`🗑️ Clearing database: ${databaseName}`);
+                        
+                        // Get all keys first to show what's being deleted
+                        const keys = await new Promise((resolve, reject) => {
+                            const request = indexedDB.open(databaseName);
+                            request.onsuccess = function(event) {
+                                const db = event.target.result;
+                                const storeName = db.objectStoreNames[0];
+                                if (storeName) {
+                                    const transaction = db.transaction([storeName], 'readonly');
+                                    const store = transaction.objectStore(storeName);
+                                    store.getAllKeys().onsuccess = function(e) {
+                                        resolve(e.target.result);
+                                    };
+                                } else {
+                                    resolve([]);
+                                }
+                            };
+                            request.onerror = () => reject(request.error);
+                        });
+                        
+                        console.log(`🗑️ Deleting ${keys.length} keys:`, keys);
+                        
+                        // Clear all data by deleting each key
+                        await new Promise((resolve, reject) => {
+                            const request = indexedDB.open(databaseName);
+                            request.onsuccess = function(event) {
+                                const db = event.target.result;
+                                const storeName = db.objectStoreNames[0];
+                                if (storeName && keys.length > 0) {
+                                    const transaction = db.transaction([storeName], 'readwrite');
+                                    const store = transaction.objectStore(storeName);
+                                    
+                                    // Clear the entire object store
+                                    const clearRequest = store.clear();
+                                    clearRequest.onsuccess = function() {
+                                        console.log('✅ Database cleared successfully');
+                                        resolve();
+                                    };
+                                    clearRequest.onerror = () => reject(clearRequest.error);
+                                } else {
+                                    console.log('📁 Database was already empty');
+                                    resolve();
+                                }
+                            };
+                            request.onerror = () => reject(request.error);
+                        });
+                        
+                        alert(`✅ Database "${databaseName}" has been cleared successfully!\n\n${keys.length} keys were deleted.`);
+                        
+                    } catch (error) {
+                        console.error('❌ Error clearing database:', error);
+                        alert('❌ Error clearing database: ' + error.message);
+                    }
+                });
+            }
+            // Read Selected Text functionality
+            class ReadSelectedText {
+            constructor() {
+                this.words = [];
+                this.sentences = [];
+                this.currentWordIndex = 0;
+                this.currentSentenceIndex = 0;
+                this.isPlaying = false;
+                this.isPaused = false;
+                this.utterance = null;
+                this.wordHighlightTimer = null;
+                
+                // Timing tracking for accuracy
+                this.sentenceStartTime = null;
+                this.expectedWordTimes = [];
+                this.actualTimingAdjustment = 1.0;
+                
+                // Initialize elements and event listeners after DOM is ready
+                this.initializeElements();
+                this.initializeEventListeners();
+            }
+
+            initializeElements() {
+                this.popupOverlay = document.getElementById('readPopupOverlay');
+                this.popupReadingArea = document.getElementById('popupReadingArea');
+                this.speedSelect = document.getElementById('speedSelect');
+                
+                if (!this.popupOverlay || !this.popupReadingArea || !this.speedSelect) {
+                    console.error('Read Selected: Required DOM elements not found');
+                    return false;
+                }
+                return true;
+            }
+            
+            initializeEventListeners() {
+                const readSelectedButton = document.getElementById('readSelectedButton');
+                const popupPlayButton = document.getElementById('popupPlayButton');
+                const popupPauseButton = document.getElementById('popupPauseButton');
+                const popupStopButton = document.getElementById('popupStopButton');
+                const readPopupClose = document.getElementById('readPopupClose');
+                
+                // Main button
+                if (readSelectedButton) {
+                    readSelectedButton.addEventListener('click', () => this.handleReadSelected());
+                }
+                
+                // Popup controls
+                if (popupPlayButton) {
+                    popupPlayButton.addEventListener('click', () => this.play());
+                }
+                if (popupPauseButton) {
+                    popupPauseButton.addEventListener('click', () => this.pause());
+                }
+                if (popupStopButton) {
+                    popupStopButton.addEventListener('click', () => this.stop());
+                }
+                if (readPopupClose) {
+                    readPopupClose.addEventListener('click', () => this.closePopup());
+                }
+                
+                // Escape key to close popup
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape' && this.popupOverlay && this.popupOverlay.style.display === 'block') {
+                        this.closePopup();
+                    }
+                });
+                
+                // Click outside popup to close
+                if (this.popupOverlay) {
+                    this.popupOverlay.addEventListener('click', (e) => {
+                        if (e.target === this.popupOverlay) {
+                            this.closePopup();
+                        }
+                    });
+                }
+                
+                // Word clicking in popup
+                if (this.popupReadingArea) {
+                    this.popupReadingArea.addEventListener('click', (e) => {
+                        if (e.target.classList.contains('word')) {
+                            const wordIndex = parseInt(e.target.dataset.index);
+                            this.jumpToWord(wordIndex);
+                        }
+                    });
+                }
+            }
+
+            getSelectedTextFromPane() {
+                const contentTextarea = document.getElementById('content');
+                if (contentTextarea && contentTextarea.selectionStart !== contentTextarea.selectionEnd) {
+                    return contentTextarea.value.substring(contentTextarea.selectionStart, contentTextarea.selectionEnd);
+                }
+                
+                // Also check for text selection in the main content area
+                const selection = window.getSelection();
+                if (selection.toString().trim()) {
+                    return selection.toString().trim();
+                }
+                
+                return null;
+            }
+
+            // Remove # prefixes and asterisks from text for speech
+            removeNumberPrefixesAndAsterisks(text) {
+                return text
+                    .replace(/(\s|^)(\d+)([A-Z])/g, '$1$3') // Number directly before capital letter
+                    .replace(/(\s|^)\d+\s+/g, '$1') // Number followed by space(s)  
+                    .replace(/(\s|^)#\s*/g, '$1') // Remove # prefixes
+                    .replace(/\*/g, '') // Remove all asterisks
+                    .trim();
+            }
+
+            prepareTextForReading(text) {
+                if (!this.popupReadingArea) return;
+                
+                // Reset timing adjustment for new text
+                this.actualTimingAdjustment = 1.0;
+                
+                const paragraphs = text.split(/\n\s*\n/);
+                this.words = [];
+                this.sentences = [];
+                let wordIndex = 0;
+                let sentenceIndex = 0;
+                
+                const paragraphsHtml = paragraphs.map(paragraph => {
+                    if (!paragraph.trim()) return '';
+                    
+                    const sentencesInParagraph = paragraph.trim().split(/[.!?]+/).filter(sentence => sentence.trim().length > 0);
+                    
+                    const paragraphHtml = sentencesInParagraph.map(sentence => {
+                        const trimmedSentence = sentence.trim();
+                        if (!trimmedSentence) return '';
+                        
+                        const wordsInSentence = trimmedSentence.split(/\s+/).filter(word => word.length > 0);
+                        this.words.push(...wordsInSentence);
+                        
+                        this.sentences.push({
+                            text: this.removeNumberPrefixesAndAsterisks(trimmedSentence), // Clean text for speech
+                            startWordIndex: wordIndex,
+                            endWordIndex: wordIndex + wordsInSentence.length - 1
+                        });
+                        
+                        const sentenceWordsHtml = wordsInSentence.map((word) => 
+                            `<span class="word" data-index="${wordIndex++}" data-sentence="${sentenceIndex}">${this.escapeHtml(word)}</span>`
+                        ).join(' ');
+                        
+                        sentenceIndex++;
+                        return sentenceWordsHtml + '. ';
+                    }).join('');
+                    
+                    return `<p>${paragraphHtml}</p>`;
+                }).filter(p => p).join('');
+                
+                this.popupReadingArea.innerHTML = paragraphsHtml;
+                this.currentWordIndex = 0;
+                this.currentSentenceIndex = 0;
+            }
+
+            escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+
+            speakCurrentSentence() {
+                if (this.currentSentenceIndex >= this.sentences.length) {
+                    this.onReadingComplete();
+                    return;
+                }
+                
+                const sentence = this.sentences[this.currentSentenceIndex];
+                
+                // Track sentence start time for timing analysis
+                this.sentenceStartTime = performance.now();
+                
+                // Start word highlighting timer for this sentence
+                this.startWordHighlighting(sentence);
+                
+                this.utterance = new SpeechSynthesisUtterance(sentence.text);
+                this.utterance.rate = parseFloat(this.speedSelect.value); // Apply speed from dropdown
+                this.utterance.pitch = 1;
+                this.utterance.volume = 1;
+                this.utterance.lang = 'en-US';
+                
+                // Enhanced voice selection
+                const voices = speechSynthesis.getVoices();
+                if (voices.length > 0) {
+                    let englishVoice = voices.find(voice =>
+                        (voice.lang.includes('en-') && voice.name.includes('Enhanced')) ||
+                        (voice.lang.includes('en-') && voice.name.includes('Premium')) ||
+                        (voice.lang.includes('en-') && voice.name.includes('Google'))
+                    );
+                    
+                    if (!englishVoice) {
+                        englishVoice = voices.find(voice => voice.lang.includes('en-'));
+                    }
+                    
+                    if (englishVoice) {
+                        this.utterance.voice = englishVoice;
+                    }
+                }
+                
+                this.utterance.onend = () => {
+                    // Analyze timing accuracy for future adjustments
+                    if (this.sentenceStartTime) {
+                        this.analyzeTimingAccuracy(sentence);
+                    }
+                    
+                    // Clear word highlighting timer when sentence ends
+                    if (this.wordHighlightTimer) {
+                        clearInterval(this.wordHighlightTimer);
+                        this.wordHighlightTimer = null;
+                    }
+                    
+                    if (this.isPlaying && !this.isPaused) {
+                        this.currentSentenceIndex++;
+                        // Small delay between sentences
+                        setTimeout(() => {
+                            if (this.isPlaying && !this.isPaused) {
+                                this.speakCurrentSentence();
+                            }
+                        }, 300);
+                    }
+                };
+                
+                this.utterance.onerror = (event) => {
+                    console.error('Speech synthesis error:', event);
+                    if (this.wordHighlightTimer) {
+                        clearInterval(this.wordHighlightTimer);
+                        this.wordHighlightTimer = null;
+                    }
+                    
+                    if (this.isPlaying && !this.isPaused) {
+                        this.currentSentenceIndex++;
+                        setTimeout(() => {
+                            if (this.isPlaying && !this.isPaused) {
+                                this.speakCurrentSentence();
+                            }
+                        }, 500);
+                    }
+                };
+                
+                speechSynthesis.cancel();
+                
+                setTimeout(() => {
+                    if (this.isPlaying && !this.isPaused && this.utterance) {
+                        speechSynthesis.speak(this.utterance);
+                    }
+                }, 150);
+            }
+
+            startWordHighlighting(sentence) {
+                if (this.wordHighlightTimer) {
+                    clearInterval(this.wordHighlightTimer);
+                    this.wordHighlightTimer = null;
+                }
+                
+                // More accurate timing based on actual speech synthesis performance
+                // Base rate calibrated from real testing: 176 WPM at 1x speed
+                const baseWordsPerMinute = 176; 
+                const currentRate = parseFloat(this.speedSelect.value);
+                const actualWordsPerMinute = baseWordsPerMinute * currentRate;
+                let millisecondsPerWord = (60 * 1000) / actualWordsPerMinute;
+
+                // Apply learned timing adjustment from previous sentences
+                millisecondsPerWord *= this.actualTimingAdjustment;
+
+                // Account for sentence processing delay and initial startup time
+                const sentenceStartupDelay = 150; // Time for TTS to begin speaking
+                const wordProcessingAdjustment = 0.85; // Slight speed up to compensate for cumulative drift
+                const adjustedMillisecondsPerWord = millisecondsPerWord * wordProcessingAdjustment;
+                
+                const wordsInSentence = sentence.endWordIndex - sentence.startWordIndex + 1;
+                let currentWordInSentence = 0;
+                
+                // Start highlighting with initial delay to sync with speech start
+                setTimeout(() => {
+                    if (!this.isPlaying || this.isPaused) return;
+                    
+                    // Highlight first word immediately when speech starts
+                    const globalWordIndex = sentence.startWordIndex + currentWordInSentence;
+                    this.highlightWord(globalWordIndex);
+                    currentWordInSentence++;
+                    
+                    // Continue with remaining words
+                    this.wordHighlightTimer = setInterval(() => {
+                        if (!this.isPlaying || this.isPaused || currentWordInSentence >= wordsInSentence) {
+                            if (this.wordHighlightTimer) {
+                                clearInterval(this.wordHighlightTimer);
+                                this.wordHighlightTimer = null;
+                            }
+                            return;
+                        }
+                        
+                        const globalWordIndex = sentence.startWordIndex + currentWordInSentence;
+                        this.highlightWord(globalWordIndex);
+                        currentWordInSentence++;
+                    }, adjustedMillisecondsPerWord);
+                    
+                }, sentenceStartupDelay);
+            }
+
+            highlightWord(wordIndex) {
+                this.clearHighlights();
+                if (!this.popupReadingArea) return;
+                
+                const wordElements = this.popupReadingArea.querySelectorAll('.word');
+                if (wordElements[wordIndex]) {
+                    wordElements[wordIndex].classList.add('current');
+                    this.currentWordIndex = wordIndex;
+                }
+            }
+
+            clearHighlights() {
+                if (!this.popupReadingArea) return;
+                
+                const wordElements = this.popupReadingArea.querySelectorAll('.word');
+                wordElements.forEach(el => {
+                    el.classList.remove('current');
+                });
+            }
+
+            analyzeTimingAccuracy(sentence) {
+                // Calculate actual speech duration
+                const actualDuration = performance.now() - this.sentenceStartTime;
+                const wordsInSentence = sentence.endWordIndex - sentence.startWordIndex + 1;
+                const actualWPM = (wordsInSentence / (actualDuration / 1000)) * 60;
+                
+                // Calculate expected WPM based on current settings
+                const currentRate = parseFloat(this.speedSelect.value);
+                const expectedWPM = 176 * currentRate; // Base 176 WPM
+                
+                // Calculate adjustment factor (with dampening to prevent overcorrection)
+                const rawAdjustment = expectedWPM / actualWPM;
+                const dampingFactor = 0.3; // Only adjust by 30% of the calculated difference
+                this.actualTimingAdjustment = this.actualTimingAdjustment + (rawAdjustment - this.actualTimingAdjustment) * dampingFactor;
+                
+                // Clamp adjustment to reasonable bounds (0.7x to 1.5x)
+                this.actualTimingAdjustment = Math.max(0.7, Math.min(1.5, this.actualTimingAdjustment));
+                
+                // Debug logging (can be removed in production)
+                console.log(`Timing analysis - Expected: ${expectedWPM.toFixed(1)} WPM, Actual: ${actualWPM.toFixed(1)} WPM, Adjustment: ${this.actualTimingAdjustment.toFixed(3)}`);
+            }
+
+            jumpToWord(wordIndex) {
+                if (wordIndex >= 0 && wordIndex < this.words.length) {
+                    this.stop();
+                    this.currentWordIndex = wordIndex;
+                    // Find which sentence contains this word
+                    for (let i = 0; i < this.sentences.length; i++) {
+                        if (wordIndex >= this.sentences[i].startWordIndex && wordIndex <= this.sentences[i].endWordIndex) {
+                            this.currentSentenceIndex = i;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            openPopup() {
+                if (!this.popupOverlay) return;
+                
+                this.popupOverlay.style.display = 'block';
+                document.body.style.overflow = 'hidden';
+                
+                setTimeout(() => {
+                    if (this.sentences.length > 0 && this.popupOverlay && this.popupOverlay.style.display === 'block') {
+                        this.play(); // Auto-start reading
+                    }
+                }, 500);
+            }
+
+            closePopup() {
+                this.stop();
+                if (this.popupOverlay) {
+                    this.popupOverlay.style.display = 'none';
+                }
+                document.body.style.overflow = 'auto';
+            }
+
+            handleReadSelected() {
+                const selectedText = this.getSelectedTextFromPane();
+                if (!selectedText) {
+                    alert('Please select some text in the content pane first.');
+                    return;
+                }
+                
+                this.stop();
+                this.prepareTextForReading(selectedText);
+                this.openPopup();
+            }
+
+            play() {
+                if (!this.sentences.length) {
+                    return;
+                }
+                
+                if (this.isPaused) {
+                    this.resumeReading();
+                } else {
+                    this.startReading();
+                }
+            }
+
+            startReading() {
+                this.stop();
+                
+                setTimeout(() => {
+                    this.isPlaying = true;
+                    this.isPaused = false;
+                    this.updateButtonStates();
+                    this.speakCurrentSentence();
+                }, 100);
+            }
+
+            resumeReading() {
+                if (window.speechSynthesis.paused) {
+                    window.speechSynthesis.resume();
+                    this.isPaused = false;
+                    this.updateButtonStates();
+                }
+            }
+
+            pause() {
+                if (this.isPlaying) {
+                    window.speechSynthesis.pause();
+                    this.isPaused = true;
+                    this.updateButtonStates();
+                }
+            }
+
+            stop() {
+                window.speechSynthesis.cancel();
+                
+                if (this.wordHighlightTimer) {
+                    clearInterval(this.wordHighlightTimer);
+                    this.wordHighlightTimer = null;
+                }
+                
+                if (this.utterance) {
+                    this.utterance.onend = null;
+                    this.utterance.onerror = null;
+                    this.utterance = null;
+                }
+                
+                this.isPlaying = false;
+                this.isPaused = false;
+                this.clearHighlights();
+                this.updateButtonStates();
+            }
+
+            updateButtonStates() {
+                const playButton = document.getElementById('popupPlayButton');
+                const pauseButton = document.getElementById('popupPauseButton');
+                const stopButton = document.getElementById('popupStopButton');
+                
+                if (playButton) {
+                    playButton.disabled = this.isPlaying && !this.isPaused;
+                }
+                if (pauseButton) {
+                    pauseButton.disabled = !this.isPlaying || this.isPaused;
+                }
+                if (stopButton) {
+                    stopButton.disabled = !this.isPlaying;
+                }
+            }
+
+            onReadingComplete() {
+                this.stop();
+            }
+            }
+
+            // Initialize Read Selected functionality
+            window.readSelectedText = new ReadSelectedText();
+            console.log('🔊 Read Selected Text functionality initialized');
+        });
+
+    </script>
+
+
+<!-- Read Selected Popup -->
+<div class="popup-overlay" id="readPopupOverlay">
+    <div class="popup-content">
+        <div class="popup-header">
+            <h3>Reading Selected Text</h3>
+            <div class="popup-controls">
+                <button class="popup-control-btn" id="popupPlayButton">▶️ Play</button>
+                <button class="popup-control-btn" id="popupPauseButton" disabled>⏸️ Pause</button>
+                <button class="popup-control-btn" id="popupStopButton" disabled>⏹️ Stop</button>
+                <button class="popup-close" id="readPopupClose">✕</button>
+            </div>
+        </div>
+        <div class="popup-reading-area" id="popupReadingArea">
+            <p style="text-align: center; color: #666;">Select text in the pane and click 'Read Selected' to begin</p>
+        </div>
+    </div>
+</div>
+
+<!-- Prism.js JavaScript for syntax highlighting -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+
+</body>
+</html>

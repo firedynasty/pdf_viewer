@@ -1,0 +1,315 @@
+MARKDOWN SUPPORT IMPLEMENTATION GUIDE
+======================================
+
+This guide explains how to add markdown (.md) file support with syntax highlighting
+to an HTML gallery application that already supports images, videos, and text files.
+
+OVERVIEW
+--------
+The implementation allows .md files to be rendered with:
+- Bold text and headers properly formatted
+- Code blocks with syntax highlighting
+- Inline code with styling
+- Links, lists, tables, blockquotes
+- All standard markdown features
+
+IMPLEMENTATION STEPS
+--------------------
+
+STEP 1: ADD EXTERNAL LIBRARIES
+-------------------------------
+Add these script and link tags in the <head> section, after the viewport meta tag
+and before the opening <style> tag:
+
+    <!-- Markdown and syntax highlighting libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/marked@11.1.1/marked.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/github-dark.min.css">
+    <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/highlight.min.js"></script>
+
+Libraries used:
+- marked.js: Converts markdown syntax to HTML
+- highlight.js: Provides syntax highlighting for code blocks
+- github-dark.min.css: GitHub-style dark theme for code blocks
+
+
+STEP 2: ADD MARKDOWN CSS STYLING
+---------------------------------
+Add this CSS in the <style> section, after the existing .text-content styles:
+
+        .markdown-content {
+            max-width: 90%;
+            max-height: 90vh;
+            background: white;
+            color: #333;
+            padding: 40px;
+            border-radius: 10px;
+            overflow-y: auto;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', sans-serif;
+            font-size: 16px;
+            line-height: 1.6;
+        }
+
+        .markdown-content h1 {
+            font-size: 2em;
+            font-weight: bold;
+            margin-top: 24px;
+            margin-bottom: 16px;
+            color: #1a1a1a;
+            border-bottom: 1px solid #e1e4e8;
+            padding-bottom: 0.3em;
+        }
+
+        .markdown-content h2 {
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-top: 24px;
+            margin-bottom: 16px;
+            color: #1a1a1a;
+            border-bottom: 1px solid #e1e4e8;
+            padding-bottom: 0.3em;
+        }
+
+        .markdown-content h3 {
+            font-size: 1.25em;
+            font-weight: bold;
+            margin-top: 24px;
+            margin-bottom: 16px;
+            color: #1a1a1a;
+        }
+
+        .markdown-content h4, .markdown-content h5, .markdown-content h6 {
+            font-weight: bold;
+            margin-top: 24px;
+            margin-bottom: 16px;
+            color: #1a1a1a;
+        }
+
+        .markdown-content p {
+            margin-bottom: 16px;
+        }
+
+        .markdown-content strong {
+            font-weight: bold;
+        }
+
+        .markdown-content em {
+            font-style: italic;
+        }
+
+        .markdown-content code {
+            background-color: rgba(27, 31, 35, 0.05);
+            border-radius: 3px;
+            font-family: 'Courier New', Consolas, Monaco, monospace;
+            font-size: 85%;
+            margin: 0;
+            padding: 0.2em 0.4em;
+        }
+
+        .markdown-content pre {
+            background-color: #f6f8fa;
+            border-radius: 6px;
+            padding: 16px;
+            overflow: auto;
+            margin-bottom: 16px;
+        }
+
+        .markdown-content pre code {
+            background-color: transparent;
+            padding: 0;
+            font-size: 100%;
+            line-height: 1.45;
+            display: block;
+        }
+
+        .markdown-content ul, .markdown-content ol {
+            margin-bottom: 16px;
+            padding-left: 2em;
+        }
+
+        .markdown-content li {
+            margin-bottom: 0.25em;
+        }
+
+        .markdown-content blockquote {
+            border-left: 4px solid #dfe2e5;
+            color: #6a737d;
+            padding-left: 1em;
+            margin-bottom: 16px;
+        }
+
+        .markdown-content a {
+            color: #0366d6;
+            text-decoration: none;
+        }
+
+        .markdown-content a:hover {
+            text-decoration: underline;
+        }
+
+        .markdown-content hr {
+            border: none;
+            border-top: 1px solid #e1e4e8;
+            margin: 24px 0;
+        }
+
+        .markdown-content table {
+            border-collapse: collapse;
+            margin-bottom: 16px;
+            width: 100%;
+        }
+
+        .markdown-content table th,
+        .markdown-content table td {
+            border: 1px solid #dfe2e5;
+            padding: 6px 13px;
+        }
+
+        .markdown-content table th {
+            background-color: #f6f8fa;
+            font-weight: bold;
+        }
+
+        .markdown-content table tr:nth-child(2n) {
+            background-color: #f6f8fa;
+        }
+
+
+STEP 3: UPDATE FILE TYPE DETECTION
+-----------------------------------
+Find the section where file types are detected (typically in a forEach loop that
+processes media paths). Update it to detect .md files:
+
+BEFORE:
+                set.images.forEach(mediaPath => {
+                    const isVideo = mediaPath.toLowerCase().match(/\.(mp4|webm|ogg|mov|avi|mkv|m4v)(\?|$)/);
+                    const isText = mediaPath.toLowerCase().match(/\.(txt)(\?|$)/);
+                    allSlides.push({
+                        type: isText ? 'text' : (isVideo ? 'video' : 'image'),
+                        src: mediaPath,
+                        setLabel: set.label
+                    });
+                });
+
+AFTER:
+                set.images.forEach(mediaPath => {
+                    const isVideo = mediaPath.toLowerCase().match(/\.(mp4|webm|ogg|mov|avi|mkv|m4v)(\?|$)/);
+                    const isText = mediaPath.toLowerCase().match(/\.(txt)(\?|$)/);
+                    const isMarkdown = mediaPath.toLowerCase().match(/\.(md)(\?|$)/);
+                    allSlides.push({
+                        type: isMarkdown ? 'markdown' : (isText ? 'text' : (isVideo ? 'video' : 'image')),
+                        src: mediaPath,
+                        setLabel: set.label
+                    });
+                });
+
+
+STEP 4: ADD MARKDOWN RENDERING LOGIC
+-------------------------------------
+Find the updateLightboxContent() function (or similar function that displays content).
+Add the markdown rendering case after the text file handling:
+
+Add this code block after the "} else if (slide.type === 'text') {" section:
+
+            } else if (slide.type === 'markdown') {
+                // Create markdown slide
+                const markdownDiv = document.createElement('div');
+                markdownDiv.className = 'markdown-content';
+                markdownDiv.textContent = 'Loading...';
+
+                // Fetch and display markdown file content
+                fetch(slide.src)
+                    .then(response => response.text())
+                    .then(text => {
+                        // Parse markdown to HTML
+                        const htmlContent = marked.parse(text);
+                        markdownDiv.innerHTML = htmlContent;
+
+                        // Apply syntax highlighting to code blocks
+                        markdownDiv.querySelectorAll('pre code').forEach((block) => {
+                            hljs.highlightElement(block);
+                        });
+                    })
+                    .catch(error => {
+                        markdownDiv.textContent = 'Error loading markdown file: ' + error.message;
+                    });
+
+                contentContainer.appendChild(markdownDiv);
+
+
+USAGE
+-----
+After implementing the above changes:
+
+1. Place .md files in your content directory (e.g., ./images/)
+2. Reference them in your data sets just like images or videos:
+
+   const set4 = {
+       label: "Mixed Media Demo",
+       images: [
+           "./images/image1.png",
+           "./images/notes.md",
+           "./images/image2.png"
+       ]
+   };
+
+3. The markdown files will be automatically detected and rendered with:
+   - **Bold text** using **text**
+   - Headers using # ## ### etc.
+   - Code blocks with syntax highlighting using ```language
+   - Inline code using `code`
+   - All standard markdown features
+
+
+MARKDOWN FEATURES SUPPORTED
+----------------------------
+✓ Headers (h1-h6) with underlines for h1 and h2
+✓ Bold text (**text**)
+✓ Italic text (*text*)
+✓ Code blocks with syntax highlighting (```python, ```javascript, etc.)
+✓ Inline code (`code`)
+✓ Links (clickable, blue, with hover effects)
+✓ Lists (ordered and unordered)
+✓ Blockquotes
+✓ Tables
+✓ Horizontal rules
+
+
+CUSTOMIZATION
+-------------
+To change the code highlighting theme, replace:
+    https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/github-dark.min.css
+
+With another theme from: https://highlightjs.org/static/demo/
+Popular options:
+- github.min.css (light theme)
+- monokai.min.css
+- atom-one-dark.min.css
+- vs2015.min.css
+
+
+NOTES
+-----
+- The implementation uses CDN links for the libraries (requires internet connection)
+- For offline use, download the libraries and host them locally
+- The markdown rendering happens client-side in the browser
+- marked.js version 11.1.1 and highlight.js version 11.9.0 are used
+- The styling follows GitHub's markdown rendering style
+
+
+TROUBLESHOOTING
+---------------
+If markdown files don't render:
+1. Check browser console for errors
+2. Verify CDN links are accessible
+3. Ensure .md files are in the correct directory
+4. Check file path references in your data sets
+5. Verify the markdown file has correct syntax
+
+If code highlighting doesn't work:
+1. Ensure highlight.js script is loaded before your main script
+2. Check that code blocks use triple backticks with language identifier
+3. Verify the CSS stylesheet link for highlight.js is correct
+
+
+END OF GUIDE
+============
