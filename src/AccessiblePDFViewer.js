@@ -6,12 +6,12 @@ import FAQModal from './components/FAQModal';
 
 // Set up the worker for PDF.js
 // This is required for react-pdf to work
-pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`;
+pdfjs.GlobalWorkerOptions.workerSrc = `${process.env.PUBLIC_URL}/pdf.worker.min.js`;
 
 const AccessiblePDFViewer = () => {
   const [numPages, setNumPages] = useState(null);
   const [pageNumber, setPageNumber] = useState(1);
-  const [scale, setScale] = useState(1.0);
+  const [scale, setScale] = useState(1.9);
   const [pdfFile, setPdfFile] = useState(null);
   const [error, setError] = useState(null);
   
@@ -26,10 +26,16 @@ const AccessiblePDFViewer = () => {
   
   // FAQ modal state
   const [isFAQModalOpen, setIsFAQModalOpen] = useState(false);
-  
+
+  // PDF text extraction state
+  const [currentPageText, setCurrentPageText] = useState('');
+  const [copyButtonState, setCopyButtonState] = useState('idle'); // 'idle', 'copying', 'success', 'error'
+
   // Refs for auto-scroll
   const lastScrollTimeRef = useRef(Date.now());
   const audioContextRef = useRef(null);
+  const pdfDocRef = useRef(null);
+  const speechSynthRef = useRef(null);
 
   // Add text layer styles to document
   useEffect(() => {
@@ -71,11 +77,42 @@ const AccessiblePDFViewer = () => {
     };
   }, []);
 
-  const onDocumentLoadSuccess = ({ numPages }) => {
+  // Extract text from current PDF page
+  useEffect(() => {
+    const extractPageText = async () => {
+      if (!pdfDocRef.current || !pageNumber) return;
+
+      try {
+        const page = await pdfDocRef.current.getPage(pageNumber);
+        const textContent = await page.getTextContent();
+        const pageText = textContent.items.map(item => item.str).join(' ');
+        setCurrentPageText(pageText);
+      } catch (error) {
+        console.error('Error extracting PDF text:', error);
+        setCurrentPageText('');
+      }
+    };
+
+    extractPageText();
+  }, [pageNumber, pdfFile]);
+
+  const onDocumentLoadSuccess = async ({ numPages }) => {
     setNumPages(numPages);
     setPageNumber(1);
     setPageInputValue("1");
     setError(null);
+
+    // Load PDF for text extraction
+    if (pdfFile) {
+      try {
+        const fileUrl = URL.createObjectURL(pdfFile);
+        const loadingTask = pdfjs.getDocument(fileUrl);
+        const pdf = await loadingTask.promise;
+        pdfDocRef.current = pdf;
+      } catch (error) {
+        console.error('Error loading PDF for text extraction:', error);
+      }
+    }
   };
 
   const onDocumentLoadError = (error) => {
@@ -151,7 +188,70 @@ const AccessiblePDFViewer = () => {
   const changeZoom = useCallback((newScale) => {
     setScale(newScale);
   }, []);
-  
+
+  // Copy current page text to clipboard
+  const handleCopyPageText = useCallback(async () => {
+    if (!currentPageText) {
+      console.log('No text content available on current page');
+      return;
+    }
+
+    setCopyButtonState('copying');
+
+    try {
+      await navigator.clipboard.writeText(currentPageText);
+      setCopyButtonState('success');
+      setTimeout(() => {
+        setCopyButtonState('idle');
+      }, 2000);
+      console.log('Page text copied to clipboard:', currentPageText.length, 'characters');
+    } catch (error) {
+      console.error('Failed to copy text:', error);
+      setCopyButtonState('error');
+      setTimeout(() => {
+        setCopyButtonState('idle');
+      }, 2000);
+    }
+  }, [currentPageText]);
+
+  // Read text from clipboard and speak it using TTS
+  const handleReadClipboard = useCallback(async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (text) {
+        // Stop any current speech
+        if (speechSynthRef.current) {
+          window.speechSynthesis.cancel();
+        }
+
+        // Create speech utterance
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.rate = 1.0;
+        utterance.pitch = 1.0;
+        utterance.volume = 1.0;
+
+        // Speak the text
+        window.speechSynthesis.speak(utterance);
+        speechSynthRef.current = utterance;
+
+        console.log('Reading clipboard text:', text.length, 'characters');
+      } else {
+        console.log('Clipboard is empty');
+      }
+    } catch (error) {
+      console.error('Failed to read clipboard:', error);
+      alert('Failed to read clipboard. Please check permissions.');
+    }
+  }, []);
+
+  // Stop TTS
+  const handleStopTTS = useCallback(() => {
+    if (window.speechSynthesis.speaking) {
+      window.speechSynthesis.cancel();
+      speechSynthRef.current = null;
+    }
+  }, []);
+
   // Play a subtle beep sound for auto-scroll notifications
   const playSubtleBeep = useCallback(() => {
     if (!soundEnabled) return;
@@ -446,6 +546,45 @@ const AccessiblePDFViewer = () => {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '1rem', width: '100%' }}>
+      {/* Links to standalone PDF viewers */}
+      {!pdfFile && (
+        <div style={{ marginBottom: '1.5rem', textAlign: 'center' }}>
+          <h2 style={{ marginBottom: '0.75rem', color: '#1f2937' }}>PDF Viewers</h2>
+          <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+            <a
+              href="/pdfViewer.html"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                padding: '0.75rem 1.5rem',
+                backgroundColor: '#2563eb',
+                color: 'white',
+                borderRadius: '0.375rem',
+                textDecoration: 'none',
+                fontSize: '1rem'
+              }}
+            >
+              PDF Viewer (Thumbnail Toggle)
+            </a>
+            <a
+              href="/pdfpreview.html"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                padding: '0.75rem 1.5rem',
+                backgroundColor: '#7c3aed',
+                color: 'white',
+                borderRadius: '0.375rem',
+                textDecoration: 'none',
+                fontSize: '1rem'
+              }}
+            >
+              PDF Preview (Thumbnail Sidebar)
+            </a>
+          </div>
+        </div>
+      )}
+
       {/* Sticky Navbar */}
       {pdfFile && (
         <div style={{
@@ -462,10 +601,12 @@ const AccessiblePDFViewer = () => {
           boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
           zIndex: 1000,
           marginBottom: '1rem',
-          borderRadius: '0.5rem'
+          borderRadius: '0.5rem',
+          overflowX: 'auto',
+          gap: '1rem'
         }}>
           {/* Navigation Controls - Left */}
-          <div style={{ display: 'flex', alignItems: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
             <button 
               onClick={() => changePage(-1)} 
               disabled={pageNumber <= 1}
@@ -546,7 +687,7 @@ const AccessiblePDFViewer = () => {
           </div>
 
           {/* Zoom Controls - Right */}
-          <div style={{ display: 'flex', alignItems: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
             {/* Zoom controls */}
             <div style={{ display: 'flex', alignItems: 'center', marginRight: '1.5rem' }}>
               <button 
@@ -577,7 +718,67 @@ const AccessiblePDFViewer = () => {
                 + (=)
               </button>
             </div>
-            
+
+            {/* Copy and Clipboard Controls */}
+            <div style={{ display: 'flex', alignItems: 'center', marginRight: '1.5rem', borderLeft: '1px solid #e5e7eb', paddingLeft: '1rem' }}>
+              <button
+                onClick={handleReadClipboard}
+                title="Read text from clipboard with TTS"
+                style={{
+                  padding: '0.5rem 1rem',
+                  backgroundColor: '#8b5cf6',
+                  color: 'white',
+                  borderRadius: '0.375rem',
+                  marginRight: '0.5rem',
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontSize: '0.875rem'
+                }}
+              >
+                📋 Read Clipboard
+              </button>
+
+              <button
+                onClick={handleStopTTS}
+                title="Stop text-to-speech"
+                style={{
+                  padding: '0.5rem 1rem',
+                  backgroundColor: '#ef4444',
+                  color: 'white',
+                  borderRadius: '0.375rem',
+                  marginRight: '0.5rem',
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontSize: '0.875rem'
+                }}
+              >
+                🛑 Stop TTS
+              </button>
+
+              <button
+                onClick={handleCopyPageText}
+                disabled={copyButtonState === 'copying' || !currentPageText}
+                title="Copy all text from current page to clipboard"
+                style={{
+                  padding: '0.5rem 1rem',
+                  backgroundColor: copyButtonState === 'success' ? '#10b981' :
+                                  copyButtonState === 'error' ? '#ef4444' :
+                                  (!currentPageText ? '#9ca3af' : '#3b82f6'),
+                  color: 'white',
+                  borderRadius: '0.375rem',
+                  border: 'none',
+                  cursor: (copyButtonState === 'copying' || !currentPageText) ? 'not-allowed' : 'pointer',
+                  fontSize: '0.875rem',
+                  minWidth: '115px'
+                }}
+              >
+                {copyButtonState === 'success' ? '✓ Copied!' :
+                 copyButtonState === 'error' ? '❌ Failed' :
+                 copyButtonState === 'copying' ? '⏳ Copying...' :
+                 '📄 Copy Text'}
+              </button>
+            </div>
+
             {/* Auto-scroll controls */}
             <div style={{ display: 'flex', alignItems: 'center', marginRight: '1.5rem', borderLeft: '1px solid #e5e7eb', paddingLeft: '1rem' }}>
               <button 
