@@ -3,9 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PDF Viewer with Directory Browser</title>
+    <title>PDF & DOCX Viewer</title>
     <!-- PDF.js library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+    <!-- Mammoth.js for DOCX rendering -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
     <style>
         * {
             box-sizing: border-box;
@@ -478,6 +480,65 @@
             text-align: center;
         }
 
+        /* DOCX Content Container */
+        .docx-content {
+            display: none;
+            background: white;
+            color: #222;
+            padding: 40px 60px;
+            max-width: 900px;
+            margin: 0 auto;
+            border-radius: 4px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+            font-family: "Calibri", "Segoe UI", Arial, sans-serif;
+            font-size: 16px;
+            line-height: 1.6;
+            min-height: 100%;
+        }
+
+        .docx-content.active {
+            display: block;
+        }
+
+        .docx-content img {
+            max-width: 100%;
+            height: auto;
+            margin: 16px 0;
+            border-radius: 4px;
+        }
+
+        .docx-content table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 16px 0;
+        }
+
+        .docx-content table td,
+        .docx-content table th {
+            border: 1px solid #ccc;
+            padding: 8px 12px;
+        }
+
+        .docx-content table th {
+            background: #f0f0f0;
+            font-weight: bold;
+        }
+
+        .docx-content h1, .docx-content h2, .docx-content h3,
+        .docx-content h4, .docx-content h5, .docx-content h6 {
+            color: #2c3e50;
+            margin-top: 24px;
+            margin-bottom: 12px;
+        }
+
+        .docx-content p {
+            margin: 8px 0;
+        }
+
+        .docx-content ul, .docx-content ol {
+            margin: 8px 0 8px 24px;
+        }
+
         /* Reading Aids */
         .reading-guide {
             position: fixed;
@@ -823,7 +884,7 @@
             <button id="rotate-btn" class="rotate-btn" title="Rotate Page 90° Right">↻ Rotate</button>
 
             <!-- Reference button -->
-            <button id="reference-btn" class="reference-btn" title="View PDF List">📋 View PDFs</button>
+            <button id="reference-btn" class="reference-btn" title="View file list">📋 View Files</button>
 
             <!-- Reading aids button -->
             <button id="reading-aids-btn" class="reading-aids-btn" title="Toggle Reading Aids (Large Cursor + Reading Guide)">👁️ Reading Aids</button>
@@ -844,12 +905,12 @@
             </div>
 
             <!-- Folder picker button -->
-            <input type="file" id="folder-picker-input" accept=".pdf" webkitdirectory style="display: none;">
-            <button class="load-folder-btn" id="loadExternalFolderBtn" title="Select folder with PDFs">📂 Load Folder</button>
+            <input type="file" id="folder-picker-input" accept=".pdf,.docx" webkitdirectory style="display: none;">
+            <button class="load-folder-btn" id="loadExternalFolderBtn" title="Select folder with PDF/DOCX files">📂 Load Folder</button>
 
-            <!-- Single PDF picker button -->
-            <input type="file" id="single-pdf-input" accept=".pdf" multiple style="display: none;">
-            <button class="load-folder-btn" id="loadSinglePdfBtn" title="Select one or more PDF files">📄 Load PDF(s)</button>
+            <!-- Single PDF/DOCX picker button -->
+            <input type="file" id="single-pdf-input" accept=".pdf,.docx" multiple style="display: none;">
+            <button class="load-folder-btn" id="loadSinglePdfBtn" title="Select one or more PDF/DOCX files">📄 Load File(s)</button>
 
             <!-- Pin toolbar toggle -->
             <button class="toolbar-pin-toggle" id="toolbar-pin-toggle" title="Pin toolbar open">📌 Pin</button>
@@ -877,6 +938,7 @@
                 <canvas id="pdf-canvas"></canvas>
                 <div class="textLayer" id="text-layer"></div>
             </div>
+            <div class="docx-content" id="docx-content"></div>
         </div>
 
         <!-- Floating page info -->
@@ -903,9 +965,9 @@
         <div class="modal-content">
             <div class="modal-header">
                 <div>
-                    <h2>PDF Reference Guide</h2>
+                    <h2>File Reference Guide</h2>
                     <div class="modal-instructions">
-                        <strong>💡 Quick Navigation:</strong> Click any PDF to jump to it, or use keyboard arrows to navigate pages
+                        <strong>💡 Quick Navigation:</strong> Click any file to jump to it, or use keyboard arrows to navigate pages
                     </div>
                 </div>
                 <button class="close-btn" id="close-modal-btn">&times;</button>
@@ -953,6 +1015,9 @@
         // Text copy state
         let currentPageText = ''; // Stores text content of current page
 
+        // DOCX state
+        let isDocx = false; // Whether current file is a DOCX
+
         // DOM Elements
         const canvas = document.getElementById('pdf-canvas');
         const ctx = canvas.getContext('2d');
@@ -991,13 +1056,28 @@
         const loadSinglePdfBtn = document.getElementById('loadSinglePdfBtn');
         const toolbarWrapper = document.getElementById('toolbar-wrapper');
         const toolbarPinToggle = document.getElementById('toolbar-pin-toggle');
+        const docxContent = document.getElementById('docx-content');
         const prevPageArrow = document.getElementById('prev-page-arrow');
         const nextPageArrow = document.getElementById('next-page-arrow');
+
+        // Load a file (routes to PDF or DOCX loader based on file extension)
+        async function loadFile(url) {
+            const currentFile = pdfFiles[currentPdfIndex];
+            const fileName = currentFile ? currentFile.fileName : url;
+            if (fileName && fileName.toLowerCase().endsWith('.docx')) {
+                await loadDocx(url);
+            } else {
+                await loadPdf(url);
+            }
+        }
 
         // Load PDF file
         async function loadPdf(url) {
             try {
                 showLoading(true);
+                isDocx = false;
+                docxContent.classList.remove('active');
+                docxContent.innerHTML = '';
                 resetThumbnails(); // Reset thumbnails when loading new PDF
                 const loadingTask = pdfjsLib.getDocument(url);
                 currentPdf = await loadingTask.promise;
@@ -1016,6 +1096,60 @@
             } catch (error) {
                 console.error('Error loading PDF:', error);
                 showError('Failed to load PDF: ' + error.message);
+                showLoading(false);
+            }
+        }
+
+        // Load DOCX file
+        async function loadDocx(url) {
+            try {
+                showLoading(true);
+                isDocx = true;
+                currentPdf = null;
+                totalPages = 1;
+                currentPageNum = 1;
+                resetThumbnails();
+
+                // Hide PDF canvas, show DOCX container
+                textLayerContainer.style.display = 'none';
+                noPdfMessage.style.display = 'none';
+
+                // Fetch the DOCX file as ArrayBuffer
+                const response = await fetch(url);
+                const arrayBuffer = await response.arrayBuffer();
+
+                // Convert DOCX to HTML using mammoth.js
+                const result = await mammoth.convertToHtml(
+                    { arrayBuffer: arrayBuffer },
+                    {
+                        convertImage: mammoth.images.imgElement(function(image) {
+                            return image.read("base64").then(function(imageBuffer) {
+                                return {
+                                    src: "data:" + image.contentType + ";base64," + imageBuffer
+                                };
+                            });
+                        })
+                    }
+                );
+
+                docxContent.innerHTML = result.value;
+                docxContent.classList.add('active');
+
+                // Store all text for copy functionality
+                currentPageText = docxContent.innerText;
+
+                if (result.messages.length > 0) {
+                    console.log('Mammoth conversion messages:', result.messages);
+                }
+
+                updateUI();
+                showLoading(false);
+                pdfContainer.scrollTo({ top: 0, left: 0 });
+
+                console.log('✓ DOCX loaded successfully');
+            } catch (error) {
+                console.error('Error loading DOCX:', error);
+                showError('Failed to load DOCX: ' + error.message);
                 showLoading(false);
             }
         }
@@ -1060,14 +1194,14 @@
         function goToPreviousPdf() {
             if (currentPdfIndex > 0) {
                 currentPdfIndex--;
-                loadPdf(pdfFiles[currentPdfIndex].url);
+                loadFile(pdfFiles[currentPdfIndex].url);
             }
         }
 
         function goToNextPdf() {
             if (currentPdfIndex < pdfFiles.length - 1) {
                 currentPdfIndex++;
-                loadPdf(pdfFiles[currentPdfIndex].url);
+                loadFile(pdfFiles[currentPdfIndex].url);
             }
         }
 
@@ -1193,8 +1327,10 @@
         function updateUI() {
             // Update page info
             let pageText = 'Page - / -';
-            if (currentPdf && pdfFiles.length > 0) {
-                pageText = `Page ${currentPageNum} / ${totalPages} | PDF ${currentPdfIndex + 1} / ${pdfFiles.length}`;
+            if (isDocx && pdfFiles.length > 0) {
+                pageText = `DOCX | File ${currentPdfIndex + 1} / ${pdfFiles.length}`;
+            } else if (currentPdf && pdfFiles.length > 0) {
+                pageText = `Page ${currentPageNum} / ${totalPages} | File ${currentPdfIndex + 1} / ${pdfFiles.length}`;
             }
             pageInfo.textContent = pageText;
             pageInfoFloat.textContent = pageText;
@@ -1235,7 +1371,7 @@
                 folderPath = '.';
             }
 
-            const pdfExtensions = ['pdf'];
+            const pdfExtensions = ['pdf', 'docx'];
 
             try {
                 showLoading(true);
@@ -1270,7 +1406,7 @@
                 directFiles.forEach((file, index) => {
                     const decodedFile = decodeURIComponent(file);
                     const fullPath = `${folderPath}/${file}`;
-                    const fileName = decodedFile.replace(/\.pdf$/i, '');
+                    const fileName = decodedFile.replace(/\.(pdf|docx)$/i, '');
 
                     pdfFiles.push({
                         key: `${index + 1}_${fileName}`,
@@ -1287,7 +1423,7 @@
 
                 // Load first PDF
                 currentPdfIndex = 0;
-                await loadPdf(pdfFiles[0].url);
+                await loadFile(pdfFiles[0].url);
 
                 folderPathInput.style.borderColor = 'rgba(0, 255, 0, 0.7)';
                 setTimeout(() => {
@@ -1307,14 +1443,15 @@
         function handleFolderSelection(files) {
             const filesArray = Array.from(files);
 
-            // Filter for PDF files only
+            // Filter for PDF and DOCX files
+            const supportedExts = ['pdf', 'docx'];
             const pdfFilesSelected = filesArray.filter(file => {
                 const ext = file.name.split('.').pop().toLowerCase();
-                return ext === 'pdf';
+                return supportedExts.includes(ext);
             });
 
             if (pdfFilesSelected.length === 0) {
-                alert('No PDF files found in selected folder');
+                alert('No PDF or DOCX files found in selected folder');
                 return;
             }
 
@@ -1328,7 +1465,7 @@
 
             // Create object URLs for each PDF
             pdfFilesSelected.forEach((file, index) => {
-                const fileName = file.name.replace(/\.pdf$/i, '');
+                const fileName = file.name.replace(/\.(pdf|docx)$/i, '');
                 pdfFiles.push({
                     key: `${index + 1}_${fileName}`,
                     url: URL.createObjectURL(file),
@@ -1336,12 +1473,12 @@
                 });
             });
 
-            // Load first PDF
+            // Load first file
             currentPdfIndex = 0;
-            loadPdf(pdfFiles[0].url);
+            loadFile(pdfFiles[0].url);
 
             // Update button text
-            loadExternalFolderBtn.textContent = `✓ ${pdfFiles.length} PDFs`;
+            loadExternalFolderBtn.textContent = `✓ ${pdfFiles.length} files`;
             setTimeout(() => {
                 loadExternalFolderBtn.textContent = '📂 Load Folder';
             }, 2000);
@@ -1349,17 +1486,18 @@
             console.log(`✓ Loaded ${pdfFiles.length} PDF files from folder picker`);
         }
 
-        // Handle single PDF file selection (adds to existing list)
+        // Handle single PDF/DOCX file selection (adds to existing list)
         function handleSinglePdfSelection(files) {
             const filesArray = Array.from(files);
 
+            const supportedExts = ['pdf', 'docx'];
             const pdfFilesSelected = filesArray.filter(file => {
                 const ext = file.name.split('.').pop().toLowerCase();
-                return ext === 'pdf';
+                return supportedExts.includes(ext);
             });
 
             if (pdfFilesSelected.length === 0) {
-                alert('No PDF files selected');
+                alert('No PDF or DOCX files selected');
                 return;
             }
 
@@ -1371,7 +1509,7 @@
             // Add to existing list (don't clear)
             const startIndex = pdfFiles.length;
             pdfFilesSelected.forEach((file, index) => {
-                const fileName = file.name.replace(/\.pdf$/i, '');
+                const fileName = file.name.replace(/\.(pdf|docx)$/i, '');
                 pdfFiles.push({
                     key: `${startIndex + index + 1}_${fileName}`,
                     url: URL.createObjectURL(file),
@@ -1379,12 +1517,12 @@
                 });
             });
 
-            // Load the first newly added PDF
+            // Load the first newly added file
             currentPdfIndex = startIndex;
-            loadPdf(pdfFiles[currentPdfIndex].url);
+            loadFile(pdfFiles[currentPdfIndex].url);
 
             // Visual feedback
-            loadSinglePdfBtn.textContent = `✓ +${pdfFilesSelected.length} PDF(s)`;
+            loadSinglePdfBtn.textContent = `✓ +${pdfFilesSelected.length} file(s)`;
             setTimeout(() => {
                 loadSinglePdfBtn.textContent = '📄 Load PDF(s)';
             }, 2000);
@@ -1402,7 +1540,7 @@
             if (pdfFiles.length === 0) {
                 const emptyMessage = document.createElement('li');
                 emptyMessage.className = 'reference-item';
-                emptyMessage.innerHTML = '<span style="color: #7f8c8d;">No PDFs loaded yet. Load a folder first.</span>';
+                emptyMessage.innerHTML = '<span style="color: #7f8c8d;">No files loaded yet. Load a folder first.</span>';
                 referenceList.appendChild(emptyMessage);
             } else {
                 pdfFiles.forEach((pdf, index) => {
@@ -1425,7 +1563,7 @@
                         goBtn.textContent = '✓';
                         goBtn.classList.add('clicked');
                         currentPdfIndex = index;
-                        loadPdf(pdfFiles[index].url);
+                        loadFile(pdfFiles[index].url);
                         setTimeout(() => {
                             closeModal();
                         }, 500);
