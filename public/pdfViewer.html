@@ -728,6 +728,47 @@
             background: rgba(46, 204, 113, 0.9);
         }
 
+        /* PDF navigation arrows (left/right) */
+        .pdf-nav-arrow {
+            position: fixed;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 10;
+            width: 48px;
+            height: 48px;
+            background: rgba(0, 0, 0, 0.45);
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s, transform 0.2s;
+        }
+
+        .pdf-nav-arrow:hover {
+            background: rgba(0, 0, 0, 0.7);
+            transform: translateY(-50%) scale(1.1);
+        }
+
+        .pdf-nav-arrow:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .pdf-nav-arrow:disabled:hover {
+            transform: translateY(-50%);
+            background: rgba(0, 0, 0, 0.45);
+        }
+
+        .pdf-nav-arrow.left {
+            left: 6px;
+        }
+
+        .pdf-nav-arrow.right {
+            right: 6px;
+        }
+
         /* Floating page info at bottom right */
         .page-info-float {
             position: fixed;
@@ -828,9 +869,9 @@
         <div class="pdf-container" id="pdf-container">
             <div class="no-pdf-message">
                 <h2>📄 PDF Viewer</h2>
-                <p>Enter a folder path and click <strong>"Load Folder"</strong></p>
-                <p>Example: <code>./</code> for current directory</p>
-                <p>Or use URL parameter: <code>?./</code> or <code>?path/to/pdfs</code></p>
+                <p>Use mouse hover on the toolbar header to access controls</p>
+                <p style="margin-top: 15px;"><strong>Keyboard Shortcuts:</strong></p>
+                <p><code>←→</code> Page | <code>↑↓</code> Scroll | <code>C</code> Copy | <code>R</code> Rotate | <code>T</code> Thumbnails | <code>/</code> Pin Toolbar | <code>Esc</code> Thumbnail Toggle</p>
             </div>
             <div class="text-layer-container" id="text-layer-container" style="display: none;">
                 <canvas id="pdf-canvas"></canvas>
@@ -840,6 +881,14 @@
 
         <!-- Floating page info -->
         <span class="page-info-float" id="page-info-float">Page - / -</span>
+
+        <!-- Page navigation arrows (prev/next page) -->
+        <button class="pdf-nav-arrow left" id="prev-page-arrow" title="Previous Page">
+            <svg width="48" height="48" viewBox="0 0 64 64"><path d="M44 8 L20 32 L44 56" stroke="white" stroke-width="8" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+        </button>
+        <button class="pdf-nav-arrow right" id="next-page-arrow" title="Next Page">
+            <svg width="48" height="48" viewBox="0 0 64 64"><path d="M20 8 L44 32 L20 56" stroke="white" stroke-width="8" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+        </button>
 
         <!-- Thumbnail Gallery (Thumbnail Mode) -->
         <div class="thumbnail-container" id="thumbnail-container"></div>
@@ -942,6 +991,8 @@
         const loadSinglePdfBtn = document.getElementById('loadSinglePdfBtn');
         const toolbarWrapper = document.getElementById('toolbar-wrapper');
         const toolbarPinToggle = document.getElementById('toolbar-pin-toggle');
+        const prevPageArrow = document.getElementById('prev-page-arrow');
+        const nextPageArrow = document.getElementById('next-page-arrow');
 
         // Load PDF file
         async function loadPdf(url) {
@@ -1159,6 +1210,10 @@
             goToPageBtn.disabled = !currentPdf;
             zoomOutBtn.disabled = scale <= MIN_SCALE;
             zoomInBtn.disabled = scale >= MAX_SCALE;
+
+            // Update page nav arrows
+            prevPageArrow.disabled = currentPageNum <= 1 || !currentPdf;
+            nextPageArrow.disabled = currentPageNum >= totalPages || !currentPdf;
 
             // Update page number input max attribute
             if (currentPdf) {
@@ -1701,6 +1756,10 @@
         closeModalBtn.addEventListener('click', closeModal);
         readingAidsBtn.addEventListener('click', toggleReadingAids);
         copyTextBtn.addEventListener('click', copyPageTextToClipboard);
+
+        // Page nav arrow event listeners
+        prevPageArrow.addEventListener('click', goToPreviousPage);
+        nextPageArrow.addEventListener('click', goToNextPage);
 
         // Folder picker event listeners
         loadExternalFolderBtn.addEventListener('click', () => {
