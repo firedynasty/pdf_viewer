@@ -1122,11 +1122,34 @@
         }
 
         /* Floating page info at bottom right */
-        .page-info-float {
+        .float-info-wrapper {
             position: fixed;
             bottom: 16px;
             right: 16px;
             z-index: 99;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 4px;
+            pointer-events: none;
+        }
+
+        .file-name-float {
+            background: rgba(0, 0, 0, 0.75);
+            color: rgba(255, 255, 255, 0.95);
+            font-size: 13px;
+            font-weight: bold;
+            padding: 6px 14px;
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+            max-width: 300px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .page-info-float {
             background: rgba(0, 0, 0, 0.75);
             color: rgba(255, 255, 255, 0.95);
             font-size: 14px;
@@ -1134,7 +1157,6 @@
             padding: 8px 14px;
             border-radius: 6px;
             border: 1px solid rgba(255, 255, 255, 0.2);
-            pointer-events: none;
             text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
         }
     </style>
@@ -1145,25 +1167,6 @@
         <div class="toolbar-wrapper" id="toolbar-wrapper">
         <div class="toolbar-peek"></div>
         <div class="toolbar">
-            <!-- VIEW MODE TOGGLE - FIRST ITEM, VERY PROMINENT -->
-            <button id="view-mode-btn" class="view-mode-btn" title="View page thumbnails or document outline (Press T)">🔲 THUMBNAILS</button>
-
-            <!-- Page navigation with jump-to input -->
-            <div class="toolbar-group">
-                <button id="prev-page-btn" title="Previous Page">◀ Prev Page</button>
-                <input
-                    type="number"
-                    id="page-number-input"
-                    class="page-number-input"
-                    placeholder="Page #"
-                    min="1"
-                    title="Enter page number and press Enter or click Go"
-                />
-                <button id="go-to-page-btn" class="go-to-page-btn" title="Go to page">→</button>
-                <span class="page-info" id="page-info">Page - / -</span>
-                <button id="next-page-btn" title="Next Page">Next Page ▶</button>
-            </div>
-
             <!-- Zoom controls -->
             <div class="toolbar-group">
                 <button id="zoom-out-btn" class="zoom-btn" title="Zoom Out">-</button>
@@ -1174,8 +1177,13 @@
             <!-- Rotate button -->
             <button id="rotate-btn" class="rotate-btn" title="Rotate Page 90° Right">↻ Rotate</button>
 
-            <!-- Reference button -->
+            <!-- File navigation -->
+            <button id="prev-file-btn" class="nav-btn" title="Previous file (F2)">▲</button>
             <button id="reference-btn" class="reference-btn" title="View file list">📋 View Files</button>
+            <button id="next-file-btn" class="nav-btn" title="Next file (F1)">▼</button>
+
+            <!-- VIEW MODE TOGGLE (after file nav so position stays stable) -->
+            <button id="view-mode-btn" class="view-mode-btn" title="View page thumbnails or document outline (Press T)">🔲 THUMBNAILS</button>
 
             <!-- Theme toggle button -->
             <button id="theme-toggle-btn" class="theme-toggle-btn" title="Toggle Dark/Light Mode">🌙 Dark</button>
@@ -1209,7 +1217,23 @@
             <!-- Pin toolbar toggle -->
             <button class="toolbar-pin-toggle" id="toolbar-pin-toggle" title="Pin toolbar open">📌 Pin</button>
 
-            <span class="page-info" style="font-size: 12px; opacity: 0.7;">←→: Page | ↑↓: Scroll | C: Copy | R: Rotate | T: Thumbnails/Outline | /: Pin Toolbar | Esc: Close</span>
+            <!-- Page navigation (at end so file nav buttons stay in place) -->
+            <div class="toolbar-group">
+                <button id="prev-page-btn" title="Previous Page">◀ Prev</button>
+                <input
+                    type="number"
+                    id="page-number-input"
+                    class="page-number-input"
+                    placeholder="Page #"
+                    min="1"
+                    title="Enter page number and press Enter or click Go"
+                />
+                <button id="go-to-page-btn" class="go-to-page-btn" title="Go to page">→</button>
+                <span class="page-info" id="page-info">Page - / -</span>
+                <button id="next-page-btn" title="Next Page">Next ▶</button>
+            </div>
+
+            <span class="page-info" style="font-size: 12px; opacity: 0.7;">←→: Page | ↑↓: Scroll | C: Copy | R: Rotate | T: Thumbnails/Outline | /: Pin | D: Dark/Light | F1,F2: File Navigate</span>
         </div>
         </div>
 
@@ -1230,8 +1254,11 @@
             <div class="text-content" id="text-content"></div>
         </div>
 
-        <!-- Floating page info -->
-        <span class="page-info-float" id="page-info-float">Page - / -</span>
+        <!-- Floating file/page info -->
+        <div class="float-info-wrapper">
+            <span class="file-name-float" id="file-name-float"></span>
+            <span class="page-info-float" id="page-info-float">Page - / -</span>
+        </div>
 
         <!-- Page navigation arrows (prev/next page) -->
         <button class="pdf-nav-arrow left" id="prev-page-arrow" title="Previous Page">
@@ -1297,7 +1324,15 @@
         let currentPdf = null;
         let currentPageNum = 1;
         let totalPages = 0;
-        let scale = parseFloat(localStorage.getItem('pdfViewerZoom')) || 1.8;
+        // Per-file-type zoom scales
+        const defaultScales = { pdf: 1.8, docx: 1.8, md: 1.8, txt: 1.8 };
+        const scales = {
+            pdf: parseFloat(localStorage.getItem('pdfViewerZoom_pdf')) || defaultScales.pdf,
+            docx: parseFloat(localStorage.getItem('pdfViewerZoom_docx')) || defaultScales.docx,
+            md: parseFloat(localStorage.getItem('pdfViewerZoom_md')) || defaultScales.md,
+            txt: parseFloat(localStorage.getItem('pdfViewerZoom_txt')) || defaultScales.txt,
+        };
+        let scale = scales.pdf;
         const SCALE_STEP = 0.2;
         const MIN_SCALE = 0.5;
         const MAX_SCALE = 3.0;
@@ -1359,10 +1394,13 @@
         const thumbnailWidthValue = document.getElementById('thumbnail-width-value');
         const copyTextBtn = document.getElementById('copy-text-btn');
         const pageInfoFloat = document.getElementById('page-info-float');
+        const fileNameFloat = document.getElementById('file-name-float');
         const singlePdfInput = document.getElementById('single-pdf-input');
         const loadSinglePdfBtn = document.getElementById('loadSinglePdfBtn');
         const toolbarWrapper = document.getElementById('toolbar-wrapper');
         const toolbarPinToggle = document.getElementById('toolbar-pin-toggle');
+        const prevFileBtn = document.getElementById('prev-file-btn');
+        const nextFileBtn = document.getElementById('next-file-btn');
         const docxContent = document.getElementById('docx-content');
         const textContent = document.getElementById('text-content');
         const themeToggleBtn = document.getElementById('theme-toggle-btn');
@@ -1392,6 +1430,7 @@
             try {
                 showLoading(true);
                 currentFileType = 'pdf';
+                scale = scales.pdf;
                 docxContent.classList.remove('active');
                 docxContent.innerHTML = '';
                 textContent.classList.remove('active', 'plain-text');
@@ -1423,6 +1462,7 @@
             try {
                 showLoading(true);
                 currentFileType = 'docx';
+                scale = scales.docx;
                 currentPdf = null;
                 totalPages = 1;
                 currentPageNum = 1;
@@ -1454,6 +1494,9 @@
 
                 docxContent.innerHTML = result.value;
                 docxContent.classList.add('active');
+                const docxZoom = scale / defaultScales.docx;
+                docxContent.style.transform = docxZoom !== 1 ? `scale(${docxZoom})` : '';
+                docxContent.style.transformOrigin = 'top center';
 
                 // Store all text for copy functionality
                 currentPageText = docxContent.innerText;
@@ -1479,6 +1522,7 @@
             try {
                 showLoading(true);
                 currentFileType = type; // 'md' or 'txt'
+                scale = scales[type];
                 currentPdf = null;
                 totalPages = 1;
                 currentPageNum = 1;
@@ -1514,6 +1558,9 @@
                 }
 
                 textContent.classList.add('active');
+                const textZoom = scale / defaultScales[type];
+                textContent.style.transform = textZoom !== 1 ? `scale(${textZoom})` : '';
+                textContent.style.transformOrigin = 'top center';
 
                 // Store text for copy functionality
                 currentPageText = rawText;
@@ -1596,14 +1643,27 @@
         function zoomIn() {
             if (scale < MAX_SCALE) {
                 scale = Math.min(scale + SCALE_STEP, MAX_SCALE);
-                renderPage(currentPageNum);
+                applyZoom();
             }
         }
 
         function zoomOut() {
             if (scale > MIN_SCALE) {
                 scale = Math.max(scale - SCALE_STEP, MIN_SCALE);
+                applyZoom();
+            }
+        }
+
+        function applyZoom() {
+            if (currentFileType === 'pdf') {
                 renderPage(currentPageNum);
+            } else {
+                // Scale text/docx content via CSS transform
+                const el = currentFileType === 'docx' ? docxContent : textContent;
+                const zoomPercent = scale / 1.8; // 1.8 is the default scale
+                el.style.transform = `scale(${zoomPercent})`;
+                el.style.transformOrigin = 'top center';
+                updateUI();
             }
         }
 
@@ -1714,9 +1774,15 @@
             pageInfo.textContent = pageText;
             pageInfoFloat.textContent = pageText;
 
+            // Update floating filename
+            const currentFile = pdfFiles[currentPdfIndex];
+            fileNameFloat.textContent = currentFile ? currentFile.fileName : '';
+            fileNameFloat.style.display = currentFile ? 'block' : 'none';
+
             // Update zoom info and persist
             zoomInfo.textContent = Math.round(scale * 100) + '%';
-            localStorage.setItem('pdfViewerZoom', scale);
+            scales[currentFileType] = scale;
+            localStorage.setItem('pdfViewerZoom_' + currentFileType, scale);
 
             // Update button states
             prevPageBtn.disabled = currentPageNum <= 1 || !currentPdf;
@@ -2331,6 +2397,8 @@
         rotateBtn.addEventListener('click', rotateRight);
         loadFolderBtn.addEventListener('click', loadFolderPath);
         referenceBtn.addEventListener('click', openModal);
+        prevFileBtn.addEventListener('click', goToPreviousPdf);
+        nextFileBtn.addEventListener('click', goToNextPdf);
         closeModalBtn.addEventListener('click', closeModal);
         themeToggleBtn.addEventListener('click', toggleTheme);
         readingAidsBtn.addEventListener('click', toggleReadingAids);
@@ -2383,6 +2451,18 @@
             const isInputFocused = document.activeElement.tagName === 'INPUT';
             if (isInputFocused) {
                 console.log('Input focused, ignoring key');
+                return;
+            }
+
+            // F1: next file, F2: previous file
+            if (e.key === 'F1') {
+                e.preventDefault();
+                goToNextPdf();
+                return;
+            }
+            if (e.key === 'F2') {
+                e.preventDefault();
+                goToPreviousPdf();
                 return;
             }
 
@@ -2452,6 +2532,10 @@
                 case 'c':
                 case 'C':
                     copyPageTextToClipboard();
+                    break;
+                case 'd':
+                case 'D':
+                    toggleTheme();
                     break;
                 case '/':
                     e.preventDefault();
