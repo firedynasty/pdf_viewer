@@ -1233,7 +1233,7 @@
                 <button id="next-page-btn" title="Next Page">Next ▶</button>
             </div>
 
-            <span class="page-info" style="font-size: 12px; opacity: 0.7;">←→: Page | ↑↓: Scroll | C: Copy | R: Rotate | T: Thumbnails/Outline | /: Pin | D: Dark/Light | F1,F2: File Navigate</span>
+            <span class="page-info" style="font-size: 12px; opacity: 0.7;">←→: Page | ↑↓: Scroll | C: Copy | R: Rotate | T: Thumbnails/Outline | /: Pin | D: Dark/Light | F1: Next File (wraps)</span>
         </div>
         </div>
 
@@ -1622,8 +1622,8 @@
         }
 
         function goToNextPdf() {
-            if (currentPdfIndex < pdfFiles.length - 1) {
-                currentPdfIndex++;
+            if (pdfFiles.length > 0) {
+                currentPdfIndex = (currentPdfIndex + 1) % pdfFiles.length;
                 loadFile(pdfFiles[currentPdfIndex].url);
             }
         }
@@ -2454,7 +2454,7 @@
                 return;
             }
 
-            // F1: next file, F2: previous file
+            // F1: next file (wraps around), F2: disabled
             if (e.key === 'F1') {
                 e.preventDefault();
                 goToNextPdf();
@@ -2462,7 +2462,6 @@
             }
             if (e.key === 'F2') {
                 e.preventDefault();
-                goToPreviousPdf();
                 return;
             }
 
