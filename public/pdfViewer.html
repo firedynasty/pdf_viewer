@@ -1325,7 +1325,11 @@
         let currentPageNum = 1;
         let totalPages = 0;
         // Per-file-type zoom scales
-        const defaultScales = { pdf: 1.8, docx: 1.8, md: 1.8, txt: 1.8 };
+        const defaultScales = { pdf: 1.7, docx: 1.8, md: 1.8, txt: 1.8 };
+        // Reset saved pdf zoom if it was 1.8 (old default) to apply new 1.7 default
+        if (parseFloat(localStorage.getItem('pdfViewerZoom_pdf')) === 1.8) {
+            localStorage.removeItem('pdfViewerZoom_pdf');
+        }
         const scales = {
             pdf: parseFloat(localStorage.getItem('pdfViewerZoom_pdf')) || defaultScales.pdf,
             docx: parseFloat(localStorage.getItem('pdfViewerZoom_docx')) || defaultScales.docx,
@@ -2497,11 +2501,11 @@
             switch(e.key) {
                 case 'ArrowDown':
                     e.preventDefault();
-                    pdfContainer.scrollBy({ top: 150, behavior: 'smooth' });
+                    pdfContainer.scrollTop = pdfContainer.scrollHeight;
                     break;
                 case 'ArrowUp':
                     e.preventDefault();
-                    pdfContainer.scrollBy({ top: -150, behavior: 'smooth' });
+                    pdfContainer.scrollTop = 0;
                     break;
                 case 'ArrowLeft':
                     goToPreviousPage();
