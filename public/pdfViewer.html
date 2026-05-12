@@ -826,13 +826,14 @@
 
         /* Middle HR line */
         .middle-hr {
-            position: fixed;
+            position: absolute;
             left: 0;
             right: 0;
+            top: 50%;
             height: 2px;
             background: rgba(231, 76, 60, 0.85);
             pointer-events: none;
-            z-index: 9998;
+            z-index: 10;
             display: none;
             box-shadow: 0 0 8px rgba(231, 76, 60, 0.6);
         }
@@ -1281,6 +1282,7 @@
             <div class="text-layer-container" id="text-layer-container" style="display: none;">
                 <canvas id="pdf-canvas"></canvas>
                 <div class="textLayer" id="text-layer"></div>
+                <div id="middle-hr" class="middle-hr"></div>
             </div>
             <div class="docx-content" id="docx-content"></div>
             <div class="text-content" id="text-content"></div>
@@ -1323,7 +1325,6 @@
     <!-- Reading Aids -->
     <div id="reading-guide" class="reading-guide"></div>
     <div id="custom-cursor" class="custom-cursor"></div>
-    <div id="middle-hr" class="middle-hr"></div>
 
     <!-- Reference Modal -->
     <div id="reference-modal" class="modal">
@@ -2113,16 +2114,9 @@
             }
         }
 
-        function positionMiddleHr() {
-            const rect = pdfContainer.getBoundingClientRect();
-            const mid = rect.top + rect.height / 2;
-            middleHrEl.style.top = mid + 'px';
-        }
-
         function toggleMiddleHr() {
             middleHrEnabled = !middleHrEnabled;
             if (middleHrEnabled) {
-                positionMiddleHr();
                 middleHrEl.classList.add('active');
                 middleHrBtn.classList.add('active');
                 middleHrBtn.textContent = '✓ Middle HR';
@@ -2132,10 +2126,6 @@
                 middleHrBtn.textContent = '— Middle HR';
             }
         }
-
-        window.addEventListener('resize', () => {
-            if (middleHrEnabled) positionMiddleHr();
-        });
 
         // Update reading guide and cursor position
         function updateReadingAids(e) {
@@ -2445,8 +2435,6 @@
             const pinned = toolbarWrapper.classList.toggle('pinned');
             toolbarPinToggle.classList.toggle('pinned', pinned);
             toolbarPinToggle.textContent = pinned ? '📌 Pinned' : '📌 Pin';
-            // Reposition middle HR after toolbar animation (300ms)
-            if (middleHrEnabled) setTimeout(positionMiddleHr, 320);
         });
 
         // Event Listeners
