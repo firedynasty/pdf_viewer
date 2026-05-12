@@ -824,6 +824,24 @@
             display: block;
         }
 
+        /* Middle HR line */
+        .middle-hr {
+            position: fixed;
+            left: 0;
+            right: 0;
+            top: 50vh;
+            height: 2px;
+            background: rgba(231, 76, 60, 0.85);
+            pointer-events: none;
+            z-index: 9998;
+            display: none;
+            box-shadow: 0 0 8px rgba(231, 76, 60, 0.6);
+        }
+
+        .middle-hr.active {
+            display: block;
+        }
+
         /* Reading aids toggle button */
         .reading-aids-btn {
             background: rgba(155, 89, 182, 0.9);
@@ -834,6 +852,18 @@
         }
 
         .reading-aids-btn.active {
+            background: rgba(46, 204, 113, 0.9);
+        }
+
+        .middle-hr-btn {
+            background: rgba(231, 76, 60, 0.9);
+        }
+
+        .middle-hr-btn:hover:not(:disabled) {
+            background: rgba(192, 57, 43, 1);
+        }
+
+        .middle-hr-btn.active {
             background: rgba(46, 204, 113, 0.9);
         }
 
@@ -1191,6 +1221,9 @@
             <!-- Reading aids button -->
             <button id="reading-aids-btn" class="reading-aids-btn" title="Toggle Reading Aids (Large Cursor + Reading Guide)">👁️ Reading Aids</button>
 
+            <!-- Middle HR button -->
+            <button id="middle-hr-btn" class="middle-hr-btn" title="Toggle middle horizontal line">— Middle HR</button>
+
             <!-- Copy Text button -->
             <button id="copy-text-btn" class="copy-text-btn" title="Copy all text from current page to clipboard">📋 Copy Page Text</button>
 
@@ -1291,6 +1324,7 @@
     <!-- Reading Aids -->
     <div id="reading-guide" class="reading-guide"></div>
     <div id="custom-cursor" class="custom-cursor"></div>
+    <div id="middle-hr" class="middle-hr"></div>
 
     <!-- Reference Modal -->
     <div id="reference-modal" class="modal">
@@ -1350,6 +1384,7 @@
 
         // Reading aids state
         let readingAidsEnabled = false;
+        let middleHrEnabled = false;
 
         // Thumbnail modal state
         let thumbnailsGenerated = false;
@@ -1385,6 +1420,8 @@
         const readingAidsBtn = document.getElementById('reading-aids-btn');
         const readingGuide = document.getElementById('reading-guide');
         const customCursor = document.getElementById('custom-cursor');
+        const middleHrBtn = document.getElementById('middle-hr-btn');
+        const middleHrEl = document.getElementById('middle-hr');
         const folderPickerInput = document.getElementById('folder-picker-input');
         const loadExternalFolderBtn = document.getElementById('loadExternalFolderBtn');
         const rotateBtn = document.getElementById('rotate-btn');
@@ -2077,6 +2114,19 @@
             }
         }
 
+        function toggleMiddleHr() {
+            middleHrEnabled = !middleHrEnabled;
+            if (middleHrEnabled) {
+                middleHrEl.classList.add('active');
+                middleHrBtn.classList.add('active');
+                middleHrBtn.textContent = '✓ Middle HR';
+            } else {
+                middleHrEl.classList.remove('active');
+                middleHrBtn.classList.remove('active');
+                middleHrBtn.textContent = '— Middle HR';
+            }
+        }
+
         // Update reading guide and cursor position
         function updateReadingAids(e) {
             if (!readingAidsEnabled) return;
@@ -2406,6 +2456,7 @@
         closeModalBtn.addEventListener('click', closeModal);
         themeToggleBtn.addEventListener('click', toggleTheme);
         readingAidsBtn.addEventListener('click', toggleReadingAids);
+        middleHrBtn.addEventListener('click', toggleMiddleHr);
         copyTextBtn.addEventListener('click', copyPageTextToClipboard);
 
         // Page nav arrow event listeners
