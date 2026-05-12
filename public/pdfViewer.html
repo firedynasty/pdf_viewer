@@ -1314,9 +1314,12 @@
                     <input type="range" class="thumbnail-width-slider" id="thumbnail-width-slider" min="100" max="400" value="200">
                     <span class="thumbnail-width-value" id="thumbnail-width-value">200px</span>
                 </div>
+                <button id="thumb-page-down-btn" title="Page down" style="width:48px;height:48px;background:rgba(0,0,0,0.45);border-radius:50%;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background 0.2s;flex-shrink:0;" onmouseover="this.style.background='rgba(0,0,0,0.7)'" onmouseout="this.style.background='rgba(0,0,0,0.45)'">
+                    <svg width="28" height="28" viewBox="0 0 64 64"><path d="M8 20 L32 44 L56 20" stroke="white" stroke-width="8" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                </button>
                 <button class="close-btn" id="close-thumbnail-modal-btn">&times;</button>
             </div>
-            <div class="thumbnail-modal-body">
+            <div class="thumbnail-modal-body" id="thumbnail-modal-body">
                 <div class="thumbnail-grid" id="thumbnail-container"></div>
             </div>
         </div>
@@ -2113,6 +2116,12 @@
                 readingAidsBtn.classList.remove('active');
                 readingAidsBtn.textContent = '👁️ Reading Aids';
             }
+            localStorage.setItem('pdfViewerReadingAids', readingAidsEnabled);
+        }
+
+        // Restore reading aids state (default: on)
+        if (localStorage.getItem('pdfViewerReadingAids') !== 'false') {
+            toggleReadingAids();
         }
 
         function toggleMiddleHr() {
@@ -2126,6 +2135,12 @@
                 middleHrBtn.classList.remove('active');
                 middleHrBtn.textContent = '— Middle HR';
             }
+            localStorage.setItem('pdfViewerMiddleHr', middleHrEnabled);
+        }
+
+        // Restore middle HR state (default: on)
+        if (localStorage.getItem('pdfViewerMiddleHr') !== 'false') {
+            toggleMiddleHr();
         }
 
         // Update reading guide and cursor position
@@ -2495,6 +2510,11 @@
 
         // View mode toggle
         viewModeBtn.addEventListener('click', toggleViewMode);
+
+        // Thumbnail modal page down button
+        document.getElementById('thumb-page-down-btn').addEventListener('click', () => {
+            document.getElementById('thumbnail-modal-body').scrollBy({ top: 400, behavior: 'smooth' });
+        });
 
         // Close thumbnail modal
         closeThumbnailModalBtn.addEventListener('click', closeThumbnailModal);
