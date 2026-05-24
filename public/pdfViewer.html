@@ -1209,17 +1209,17 @@
 
             <!-- File navigation -->
             <button id="prev-file-btn" class="nav-btn" title="Previous file (F2)">▲</button>
-            <button id="reference-btn" class="reference-btn" title="View file list">📋 View Files</button>
+            <button id="reference-btn" class="reference-btn" title="View file list (V)">📋 View Files (V)</button>
             <button id="next-file-btn" class="nav-btn" title="Next file (F1)">▼</button>
 
             <!-- VIEW MODE TOGGLE (after file nav so position stays stable) -->
-            <button id="view-mode-btn" class="view-mode-btn" title="View page thumbnails or document outline (Press T)">🔲 THUMBNAILS</button>
+            <button id="view-mode-btn" class="view-mode-btn" title="View page thumbnails or document outline (T)">🔲 Thumbnails (T)</button>
 
             <!-- Theme toggle button -->
             <button id="theme-toggle-btn" class="theme-toggle-btn" title="Toggle Dark/Light Mode">🌙 Dark</button>
 
             <!-- Reading aids button -->
-            <button id="reading-aids-btn" class="reading-aids-btn" title="Toggle Reading Aids (Large Cursor + Reading Guide)">👁️ Reading Aids</button>
+            <button id="reading-aids-btn" class="reading-aids-btn" title="Toggle Ruler (U)">👁️ Ruler (U)</button>
 
             <!-- Middle HR button -->
             <button id="middle-hr-btn" class="middle-hr-btn" title="Toggle middle horizontal line">— Middle HR</button>
@@ -1277,6 +1277,7 @@
                 <p>Use mouse hover on the toolbar header to access controls</p>
                 <p style="margin-top: 15px;"><strong>Keyboard Shortcuts:</strong></p>
                 <p><code>←→</code> Page | <code>↑↓</code> Scroll | <code>C</code> Copy | <code>R</code> Rotate | <code>T</code> Thumbnails/Outline | <code>/</code> Pin Toolbar</p>
+                <p><code>V</code> View Files | <code>L</code> Load Folder | <code>U</code> Ruler</p>
                 <p style="margin-top: 10px;"><strong>Supported:</strong> PDF, DOCX, MD, TXT</p>
             </div>
             <div class="text-layer-container" id="text-layer-container" style="display: none;">
@@ -2108,13 +2109,13 @@
                 customCursor.classList.add('active');
                 pdfContainer.classList.add('large-cursor');
                 readingAidsBtn.classList.add('active');
-                readingAidsBtn.textContent = '✓ Reading Aids';
+                readingAidsBtn.textContent = '✓ Ruler (U)';
             } else {
                 readingGuide.classList.remove('active');
                 customCursor.classList.remove('active');
                 pdfContainer.classList.remove('large-cursor');
                 readingAidsBtn.classList.remove('active');
-                readingAidsBtn.textContent = '👁️ Reading Aids';
+                readingAidsBtn.textContent = '👁️ Ruler (U)';
             }
             localStorage.setItem('pdfViewerReadingAids', readingAidsEnabled);
         }
@@ -2624,6 +2625,18 @@
                 case 'd':
                 case 'D':
                     toggleTheme();
+                    break;
+                case 'v':
+                case 'V':
+                    referenceBtn.click();
+                    break;
+                case 'l':
+                case 'L':
+                    loadExternalFolderBtn.click();
+                    break;
+                case 'u':
+                case 'U':
+                    toggleReadingAids();
                     break;
                 case '/':
                     e.preventDefault();
